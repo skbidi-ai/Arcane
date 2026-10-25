@@ -1,7 +1,10 @@
 import pg from 'pg';
 import crypto from 'node:crypto';
 const pool = new pg.Pool({ connectionString: process.env.NEON_DATABASE_URL, max: 3 });
-const E = process.env, OWNERS = (E.BOT_OWNER_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
+const E = process.env;
+const AUTH_URL = 'https://www.yapin.gg/oauth/authorize', TOKEN_URL = 'https://www.yapin.gg/api/oauth/token', ME_URL = 'https://www.yapin.gg/api/oauth/me';
+const SITE = (E.SITE_URL || '').trim().replace(/\/+$/, ''), CID = (E.YAPPER_CLIENT_ID || '').trim(), CSEC = (E.YAPPER_CLIENT_SECRET || '').trim();
+const OWNERS = (E.BOT_OWNER_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const sign = (s) => crypto.createHmac('sha256', E.SESSION_SECRET).update(s).digest('base64url');
 const enc = (o) => { const b = Buffer.from(JSON.stringify(o)).toString('base64url'); return `${b}.${sign(b)}`; };
 function session(req) {
@@ -41,15 +44,15 @@ export default async function handler(req, res) {
     if (path[0] === 'login') {
       const state = crypto.randomUUID();
       res.setHeader('set-cookie', `arc_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
-      const q = new URLSearchParams({ client_id: E.YAPPER_CLIENT_ID, redirect_uri: `${E.SITE_URL}/api/callback`, response_type: 'code', scope: 'identify', state });
-      res.statusCode = 302; res.setHeader('location', `${E.YAPPER_AUTH_URL}?${q}`); return res.end();
+      const q = new URLSearchParams({ client_id: CID, redirect_uri: `${SITE}/api/callback`, response_type: 'code', scope: 'identify', state });
+      res.statusCode = 302; res.setHeader('location', `${AUTH_URL}?${q}`); return res.end();
     }
     if (path[0] === 'callback') {
       const u = new URL(req.url, 'http://x'); const st = /arc_state=([^;]+)/.exec(req.headers.cookie || '')?.[1];
       if (!st || st !== u.searchParams.get('state')) return json(res, 400, { error: 'bad state' });
-      const t = await (await fetch(E.YAPPER_TOKEN_URL, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', code: u.searchParams.get('code'), client_id: E.YAPPER_CLIENT_ID, client_secret: E.YAPPER_CLIENT_SECRET, redirect_uri: `${E.SITE_URL}/api/callback` }) })).json();
+      const t = await (await fetch(TOKEN_URL, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', code: u.searchParams.get('code'), client_id: CID, client_secret: CSEC, redirect_uri: `${SITE}/api/callback` }) })).json();
       let p = t.user;
-      if (!p && t.access_token) p = await (await fetch(E.YAPPER_USERINFO_URL, { headers: { authorization: `Bearer ${t.access_token}` } })).json();
+      if (!p && t.access_token) p = await (await fetch(ME_URL, { headers: { authorization: `Bearer ${t.access_token}` } })).json();
       p = p?.user || p; const id = p?.id || p?.sub; if (!id) return json(res, 401, { error: 'login failed' });
       res.setHeader('set-cookie', `arc=${enc({ id: String(id), name: p.display_name || p.username || p.name || 'User', avatar: p.avatar_url || p.avatar || null, exp: Date.now() + 7 * 864e5 })}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
       res.statusCode = 302; res.setHeader('location', '/#/dashboard'); return res.end();
