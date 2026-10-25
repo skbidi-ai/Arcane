@@ -6,6 +6,9 @@ const AUTH_URL = 'https://www.yapin.gg/oauth/authorize', TOKEN_URL = 'https://ww
 const SITE = (E.SITE_URL || '').trim().replace(/\/+$/, ''), CID = (E.YAPPER_CLIENT_ID || '').trim(), CSEC = (E.YAPPER_CLIENT_SECRET || '').trim();
 const OWNERS = (E.BOT_OWNER_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const sign = (s) => crypto.createHmac('sha256', E.SESSION_SECRET).update(s).digest('base64url');
+const mkState = () => { const n = crypto.randomUUID(), t = Date.now().toString(36); return `${n}.${t}.${sign(`${n}.${t}`)}`; };
+const okState = (v) => { const [n, t, g] = String(v || '').split('.'); if (!g) return false; const w = sign(`${n}.${t}`);
+  return g.length === w.length && crypto.timingSafeEqual(Buffer.from(g), Buffer.from(w)) && Date.now() - parseInt(t, 36) < 15 * 60e3; };
 const enc = (o) => { const b = Buffer.from(JSON.stringify(o)).toString('base64url'); return `${b}.${sign(b)}`; };
 function session(req) {
   const m = /(?:^|; )arc=([^;]+)/.exec(req.headers.cookie || ''); if (!m) return null;
@@ -42,14 +45,13 @@ export default async function handler(req, res) {
   const user = session(req);
   try {
     if (path[0] === 'login') {
-      const state = crypto.randomUUID();
-      res.setHeader('set-cookie', `arc_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
+      const state = mkState();
       const q = new URLSearchParams({ client_id: CID, redirect_uri: `${SITE}/api/callback`, response_type: 'code', scope: 'identify', state });
       res.statusCode = 302; res.setHeader('location', `${AUTH_URL}?${q}`); return res.end();
     }
     if (path[0] === 'callback') {
-      const u = new URL(req.url, 'http://x'); const st = /arc_state=([^;]+)/.exec(req.headers.cookie || '')?.[1];
-      if (!st || st !== u.searchParams.get('state')) return json(res, 400, { error: 'bad state' });
+      const u = new URL(req.url, 'http://x'); 
+      if (!okState(u.searchParams.get('state'))) return json(res, 400, { error: 'bad state', hint: 'login link expired, start again from the site' });
       const t = await (await fetch(TOKEN_URL, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', code: u.searchParams.get('code'), client_id: CID, client_secret: CSEC, redirect_uri: `${SITE}/api/callback` }) })).json();
       let p = t.user;
       if (!p && t.access_token) p = await (await fetch(ME_URL, { headers: { authorization: `Bearer ${t.access_token}` } })).json();
