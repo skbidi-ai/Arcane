@@ -1,1 +1,1 @@
-{ "name": "arcane-dashboard", "private": true, "type": "module", "dependencies": { "pg": "^8.13.0" } }
+{"name":"arcane-dashboard","private":true,"type":"module","dependencies":{"@vercel/analytics":"^2.0.1","pg":"^8.13.0"}}
