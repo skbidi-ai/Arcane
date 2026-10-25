@@ -33,8 +33,14 @@ function sanitize(c = {}) {
     modRoles: Array.isArray(c.modRoles) ? c.modRoles.map(String).slice(0, 25) : undefined,
     welcome: Object.keys(w).length ? clean({ channel: str(w.channel, 64), title: str(w.title, 256), message: str(w.message, 2000), image: str(w.image, 500), footer: str(w.footer, 256), color: /^#?[0-9a-f]{6}$/i.test(w.color) ? w.color : undefined }) : undefined,
     goodbye: Object.keys(g).length ? clean({ channel: str(g.channel, 64), message: str(g.message, 2000) }) : undefined,
+    discover: c.discover && typeof c.discover === 'object' ? clean({ enabled: bool(c.discover.enabled), description: str(c.discover.description, 300), invite: c.discover.invite === '' || /^https:\/\/\S{3,200}$/.test(c.discover.invite || '') ? c.discover.invite : undefined }) : undefined,
   });
 }
+const slug = (x = '') => String(x).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const cleanList = (key, items) => (Array.isArray(items) ? items : []).slice(0, 100).map((e) => (key === 'docs'
+  ? { id: slug(str(e.id, 60)), title: str(e.title, 120), category: str(e.category, 40) || 'General', body: str(e.body, 20000) || '' }
+  : { version: str(e.version, 20), tag: str(e.tag, 40) || '', date: str(e.date, 30) || '', items: (Array.isArray(e.items) ? e.items : []).map((x) => str(String(x), 500)).filter(Boolean).slice(0, 30) }))
+  .filter((e) => (key === 'docs' ? e.id && e.title : e.version));
 async function allowed(user, id) {
   const { rows } = await pool.query('SELECT owner_id FROM arcane_guilds WHERE server_id=$1', [id]);
   return rows[0] && (OWNERS.includes(user.id) || rows[0].owner_id === user.id);
@@ -62,6 +68,25 @@ export default async function handler(req, res) {
     if (path[0] === 'logout') { res.setHeader('set-cookie', 'arc=; Path=/; Max-Age=0'); return json(res, 200, { ok: true }); }
     if (path[0] === 'registry') { // public: real command list published by the bot
       const { rows } = await pool.query("SELECT value FROM arcane_dashboard_state WHERE key='registry'"); return json(res, 200, rows[0]?.value || []);
+    }
+    if (path[0] === 'stats') {
+      res.setHeader('cache-control', 'public, s-maxage=30');
+      const { rows } = await pool.query('SELECT count(*)::int AS servers, coalesce(sum(member_count),0)::int AS members FROM arcane_guilds'); return json(res, 200, rows[0]);
+    }
+    if (path[0] === 'discover') { // opt-in only: servers that switched Discover on in their dashboard
+      const q = (new URL(req.url, 'http://x').searchParams.get('q') || '').slice(0, 60);
+      const { rows } = await pool.query(`SELECT g.server_id, g.name, g.icon, g.member_count, s.config->'discover' AS d FROM arcane_guilds g JOIN arcane_guild_settings s USING (server_id)
+        WHERE (s.config->'discover'->>'enabled') = 'true' AND ($1 = '' OR g.name ILIKE '%'||$1||'%' OR (s.config->'discover'->>'description') ILIKE '%'||$1||'%') ORDER BY g.member_count DESC NULLS LAST LIMIT 40`, [q]);
+      return json(res, 200, rows);
+    }
+    if (path[0] === 'docs' || path[0] === 'changelog') { // public read, owner-only write
+      const key = path[0];
+      if (req.method === 'PUT') {
+        if (!user || !OWNERS.includes(user.id)) return json(res, 403, { error: 'owner only' });
+        const list = cleanList(key, (await body(req)).items);
+        await pool.query(`INSERT INTO arcane_dashboard_state (key,value) VALUES ($1,$2::jsonb) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_at=now()`, [key, JSON.stringify(list)]);
+      }
+      const { rows } = await pool.query('SELECT value FROM arcane_dashboard_state WHERE key=$1', [key]); return json(res, 200, rows[0]?.value || null);
     }
     if (!user) return json(res, 401, { error: 'not logged in' });
     if (path[0] === 'me') return json(res, 200, { ...user, owner: OWNERS.includes(user.id) });
