@@ -1,6 +1,10 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Arcane – Yapin’s best moderation, utility, leveling and fun bot</title><link rel="icon" href="/arcane.png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,800&display=swap" rel="stylesheet">
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
 <style>
 :root{--bg:#060a14;--pn:#0c1424;--ln:#18243b;--tx:#eaf6ff;--mu:#7f93ad;--a:#8fdcff;--g:linear-gradient(90deg,#e4f6ff,#8fdcff 45%,#4aa7ee)}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(1000px 520px at 50% -8%,#103a6466,transparent 70%),var(--bg);color:var(--tx);font:400 16px/1.6 Poppins,system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
@@ -119,4 +123,5 @@ else if(p=='changelog'){if(!LOG)await changelog();if(isOwner()&&a=='_new')logEdi
 else if(p=='dashboard'&&a)await guildPage(a);else if(p=='dashboard')await dashboard();else await home()}
 catch{app.innerHTML='<section class="hero"><h1><b>Hmm.</b></h1><p class="sub">You may need to <a href="/api/login" style="color:var(--a)">log in</a>, or you do not manage this server.</p></section>'}}
 addEventListener('hashchange',route);api('me').then(m=>ME=m).catch(()=>{}).finally(route);
-</script></body></html>
+</script>
+</body></html>
