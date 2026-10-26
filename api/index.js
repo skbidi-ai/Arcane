@@ -33,7 +33,19 @@ function sanitize(c = {}) {
     modRoles: Array.isArray(c.modRoles) ? c.modRoles.map(String).slice(0, 25) : undefined,
     welcome: Object.keys(w).length ? clean({ channel: str(w.channel, 64), title: str(w.title, 256), message: str(w.message, 2000), image: str(w.image, 500), footer: str(w.footer, 256), color: /^#?[0-9a-f]{6}$/i.test(w.color) ? w.color : undefined }) : undefined,
     goodbye: Object.keys(g).length ? clean({ channel: str(g.channel, 64), message: str(g.message, 2000) }) : undefined,
+    verify: c.verify && typeof c.verify === 'object' ? sanitizeVerify(c.verify) : undefined,
     discover: c.discover && typeof c.discover === 'object' ? clean({ enabled: bool(c.discover.enabled), description: str(c.discover.description, 300), invite: c.discover.invite === '' || /^https:\/\/\S{3,200}$/.test(c.discover.invite || '') ? c.discover.invite : undefined }) : undefined,
+  });
+}
+const hex6 = (v) => (/^#?[0-9a-f]{6}$/i.test(v || '') ? (String(v).startsWith('#') ? v : '#' + v) : undefined);
+// Only settings. The bot owns verify.panels and verify.count, so they are never accepted from the website.
+function sanitizeVerify(v) {
+  const e = v.embed && typeof v.embed === 'object' ? v.embed : null;
+  return clean({
+    role: str(v.role, 64), unverifiedRole: str(v.unverifiedRole, 64), channel: str(v.channel, 64),
+    label: str(v.label, 40)?.trim() || undefined, emoji: str(v.emoji, 16)?.trim() || undefined,
+    dm: bool(v.dm), log: bool(v.log),
+    embed: e ? clean({ title: str(e.title, 256), description: str(e.description, 1500), steps: str(e.steps, 1000), security: str(e.security, 1000), ready: str(e.ready, 400), footer: str(e.footer, 200), color: hex6(e.color) }) : undefined,
   });
 }
 const slug = (x = '') => String(x).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -96,10 +108,32 @@ export default async function handler(req, res) {
     }
     if (path[0] === 'guild' && path[1]) {
       if (!(await allowed(user, path[1]))) return json(res, 403, { error: 'forbidden' });
+      if (path[2] === 'action') { // jobs for the bot (picked up on its 15s sync)
+        await pool.query(`CREATE TABLE IF NOT EXISTS arcane_actions (id bigserial PRIMARY KEY, server_id text NOT NULL, type text NOT NULL, payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+          status text NOT NULL DEFAULT 'pending', result text, created_at timestamptz NOT NULL DEFAULT now(), done_at timestamptz)`);
+        if (req.method === 'POST') {
+          const b = await body(req);
+          if (b.type !== 'verify_panel') return json(res, 400, { error: 'unknown action' });
+          const channel = str(b.channel, 64);
+          if (!channel) return json(res, 400, { error: 'channel required' });
+          const busy = await pool.query("SELECT 1 FROM arcane_actions WHERE server_id=$1 AND type=$2 AND status IN ('pending','running') AND created_at > now() - interval '10 minutes'", [path[1], b.type]);
+          if (busy.rowCount) return json(res, 429, { error: 'A panel is already waiting to be posted' });
+          const { rows } = await pool.query('INSERT INTO arcane_actions (server_id,type,payload) VALUES ($1,$2,$3::jsonb) RETURNING id', [path[1], b.type, JSON.stringify({ channel })]);
+          return json(res, 200, { id: String(rows[0].id), status: 'pending' });
+        }
+        const { rows } = await pool.query('SELECT id::text, status, result FROM arcane_actions WHERE server_id=$1 AND id=$2', [path[1], /^\d+$/.test(path[3] || '') ? path[3] : '0']);
+        return rows[0] ? json(res, 200, rows[0]) : json(res, 404, { error: 'not found' });
+      }
       if (req.method === 'PUT') {
         const patch = sanitize((await body(req)).config);
+        // Top-level keys replace, but `verify` is merged one level deep so the bot's panels + count survive a save.
         await pool.query(`INSERT INTO arcane_guild_settings (server_id,config) VALUES ($1,$2::jsonb)
-          ON CONFLICT (server_id) DO UPDATE SET config = arcane_guild_settings.config || EXCLUDED.config, updated_at=now()`, [path[1], JSON.stringify(patch)]);
+          ON CONFLICT (server_id) DO UPDATE SET config =
+            (arcane_guild_settings.config || (EXCLUDED.config - 'verify'))
+            || CASE WHEN EXCLUDED.config ? 'verify'
+                 THEN jsonb_build_object('verify', COALESCE(arcane_guild_settings.config->'verify', '{}'::jsonb) || (EXCLUDED.config->'verify'))
+                 ELSE '{}'::jsonb END,
+            updated_at=now()`, [path[1], JSON.stringify(patch)]);
       }
       const [g, s] = await Promise.all([pool.query('SELECT * FROM arcane_guilds WHERE server_id=$1', [path[1]]), pool.query('SELECT config FROM arcane_guild_settings WHERE server_id=$1', [path[1]])]);
       return json(res, 200, { guild: g.rows[0], config: s.rows[0]?.config || {} });
