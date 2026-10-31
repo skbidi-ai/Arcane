@@ -62,7 +62,7 @@ export function sampleVars() {
     rating: '⭐⭐⭐⭐⭐', feedback: 'Fast and friendly!', date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     message: 'Hey! Could you send a screenshot of the error?', 'author.name': 'YourMod', 'author.avatar': '', attachments: '', 'attachment.image': '',
     closeIn: '24h', limit: '1', cooldown: '10 minutes', 'question.index': '1', 'question.total': '2', 'question.label': 'What do you need help with?',
-    'question.placeholder': 'Describe the problem', 'question.hint': 'Required · reply in this DM',
+    'question.placeholder': 'Describe the problem', 'question.hint': 'Required · reply in this DM', error: 'Please write at least 10 characters.', 'open.count': '2', 'other.id': '0041',
   };
 }
 
@@ -92,6 +92,13 @@ export const DEFAULTS = {
   thanks: M('', [E({ color: GREEN, title: '💙 Thank you!', description: 'You rated ticket **#{ticket.id}** {rating}.\nWant to add a comment? Just reply here.' })]),
   relayStaff: M('', [E({ description: '{message}\n{attachments}', author: { name: '{author.name}', icon: '{author.avatar}', url: '' }, image: '{attachment.image}', footer: { text: 'Staff · Ticket #{ticket.id}', icon: '' }, timestamp: true })]),
   relayMember: M('', [E({ color: GREEN, description: '{message}\n{attachments}', author: { name: '{author.name}', icon: '{author.avatar}', url: '' }, image: '{attachment.image}', footer: { text: 'Member · Ticket #{ticket.id}', icon: '' }, timestamp: true })]),
+  unclaimed: M('', [E({ color: GOLD, description: '{staff} released this ticket.' })]),
+  priorityChanged: M('', [E({ color: GOLD, description: '{staff} set the priority to **{ticket.priority}**.' })]),
+  transferred: M('', [E({ title: '🔀 Ticket moved', description: '{staff} moved this ticket to **{ticket.type}**.\n{staffRoles}' })]),
+  logOpened: M('', [E({ color: GREEN, title: '🎫 Ticket #{ticket.id} opened', description: '{user} opened **{ticket.type}** in {ticket.channel}', timestamp: true })]),
+  logClosed: M('', [E({ color: RED, title: '🔒 Ticket #{ticket.id} closed', description: '{user} · **{ticket.type}**\nClosed by {staff}\n**Reason:** {closeReason}', timestamp: true })]),
+  questionError: M('', [E({ color: RED, description: '{error}' })]),
+  multiHint: M('', [E({ description: 'That went to ticket **#{ticket.id}**. You have {open.count} open. Start a message with `#{other.id}` to reach another one.' })]),
   errLimit: M('', [E({ color: RED, title: '❌ Ticket limit reached', description: 'You already have **{limit}** open ticket(s). Close one before opening another.' })]),
   errBlacklist: M('', [E({ color: RED, title: '🚫 You can’t open tickets', description: 'You are blocked from opening tickets in **{server}**.' })]),
   errCooldown: M('', [E({ color: RED, title: '⏳ Slow down', description: 'You can open another ticket in **{cooldown}**.' })]),
@@ -109,6 +116,13 @@ export const MESSAGE_META = {
   claimed: { g: 'Handling', t: 'Ticket claimed', d: 'Posted in the channel and sent to the member.', a: A_LINK },
   relayStaff: { g: 'Handling', t: 'Staff reply (shown to member)', d: 'Wraps every staff message relayed to the member’s DM.', a: A_LINK, x: ['{message}', '{author.name}', '{author.avatar}', '{attachments}', '{attachment.image}'] },
   relayMember: { g: 'Handling', t: 'Member reply (shown to staff)', d: 'Wraps every member message relayed to the staff channel.', a: A_LINK, x: ['{message}', '{author.name}', '{author.avatar}', '{attachments}', '{attachment.image}'] },
+  unclaimed: { g: 'Handling', t: 'Ticket unclaimed', d: 'Posted in the staff channel when someone releases a ticket.', a: A_LINK },
+  priorityChanged: { g: 'Handling', t: 'Priority changed', d: 'Posted in the staff channel when the priority changes.', a: A_LINK },
+  transferred: { g: 'Handling', t: 'Ticket transferred', d: 'Posted when a ticket moves to another type. {ticket.type} is the new type.', a: A_LINK },
+  multiHint: { g: 'Handling', t: 'Several open tickets hint', d: 'DM hint when a member has more than one ticket open.', a: A_LINK, x: ['{open.count}', '{other.id}'] },
+  questionError: { g: 'Opening', t: 'Question answer error', d: 'Shown when an answer is too short, too long or missing.', a: A_LINK, x: ['{error}'] },
+  logOpened: { g: 'Logs', t: 'Log: ticket opened', d: 'Posted in your log channel when a ticket opens.', a: A_LINK },
+  logClosed: { g: 'Logs', t: 'Log: ticket closed', d: 'Posted in your log channel. Transcript and Reopen buttons are added automatically.', a: A_LINK },
   inactivity: { g: 'Handling', t: 'Inactivity warning', d: 'Sent before a quiet ticket closes automatically.', a: A_LINK, x: ['{closeIn}'] },
   close: { g: 'Closing', t: 'Ticket closed', d: 'Sent to the member and posted in the channel and log.', a: A_LINK },
   reopen: { g: 'Closing', t: 'Ticket reopened', d: 'Sent to the member and posted in the channel.', a: A_LINK },
@@ -121,7 +135,7 @@ export const MESSAGE_META = {
   errPerm: { g: 'Errors', t: 'Missing permission', d: 'Someone who isn’t staff used a staff tool.', a: A_LINK },
   errDm: { g: 'Errors', t: 'DMs closed', d: 'The bot could not DM the member.', a: A_LINK },
 };
-export const OVERRIDABLE = ['dm', 'staff', 'confirm'];
+export const OVERRIDABLE = ['confirm', 'dm', 'staff', 'claimed', 'unclaimed', 'priorityChanged', 'transferred', 'relayStaff', 'relayMember', 'inactivity', 'close', 'reopen', 'logOpened', 'logClosed'];
 
 // ── validation ──────────────────────────────────────────────────────────────
 const S = (v, n, errs, label) => { v = v == null ? '' : String(v); if (v.length > n) errs.push(`${label} is ${v.length}/${n} characters`); return v.slice(0, n); };
@@ -198,7 +212,7 @@ export function normalizeConfig(raw) {
     return {
       id, name, label: str(t.label, 80).trim() || name, emoji: str(t.emoji, 16).trim(), style: STYLES.includes(t.style) ? t.style : 'primary', description: str(t.description, 100),
       staffRoles: ids(t.staffRoles, 25), categoryId: str(t.categoryId), nameTemplate: str(t.nameTemplate, 100).trim() || 'ticket-{ticket.id}-{user.name}',
-      assign: t.assign === 'roundrobin' ? 'roundrobin' : 'none', maxOpen: Math.floor(num(t.maxOpen, 0, 0, 50)), questions, msgs,
+      color: /^#?[0-9a-f]{6}$/i.test(t.color || '') ? '#' + String(t.color).replace('#', '').toLowerCase() : '', assign: t.assign === 'roundrobin' ? 'roundrobin' : 'none', maxOpen: Math.floor(num(t.maxOpen, 0, 0, 50)), questions, msgs,
     };
   });
   const seenP = new Set();
@@ -240,8 +254,8 @@ export function renderMessage(m, vars = {}, o = {}) {
   const rows = [];
   if (o.panel) {
     const bs = (o.panel.types || []).map((t) => clean({ type: 'button', style: STYLES.includes(t.style) ? t.style : 'primary', label: f(t.label || t.name).slice(0, 80), emoji: t.emoji || undefined, custom_id: `tk:open:${o.panel.id}:${t.id}` }));
-    for (let i = 0; i < bs.length && rows.length < 5; i += 5) rows.push({ type: 'action_row', components: bs.slice(i, i + 5) });
+    for (let i = 0; i < bs.length && rows.length < 5; i += 5) rows.push({ type: 'row', components: bs.slice(i, i + 5) });
   }
-  for (const r of m.rows || []) { const c = (r || []).map(btn).filter(Boolean); if (c.length && rows.length < 5) rows.push({ type: 'action_row', components: c }); }
+  for (const r of m.rows || []) { const c = (r || []).map(btn).filter(Boolean); if (c.length && rows.length < 5) rows.push({ type: 'row', components: c }); }
   return { content: f(m.content).slice(0, 2000), embeds, components: rows };
 }
