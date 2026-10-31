@@ -273,18 +273,18 @@ Verification:()=>verifyTab()};
 let cur='General';
 const collect=()=>{const p={};document.querySelectorAll('[data-k]').forEach(e=>{const k=e.dataset.k.split('.');let v=e.type=='checkbox'?e.checked:e.value;if(e.dataset.k=='badWords')v=v.split(',').map(s=>s.trim()).filter(Boolean);if(e.dataset.k=='xpRate')v=Number(v);let o=p;k.slice(0,-1).forEach(x=>o=o[x]||={});o[k.at(-1)]=v});if(cur=='General')p.modRoles=mr;return p};
 const saveNow=async()=>{const r=await put('guild/'+id,{config:collect()});Object.assign(c,r.config);fixV();if(cur=='General')mr=[...c.modRoles];return r};
-const draw=()=>{app.innerHTML=`<a href="#/dashboard" style="color:var(--mu)">← Servers</a><h2 style="margin:8px 0 22px;font-size:32px">${esc(guild?.name)}</h2><div class="dash"><div class="side">${Object.keys(tabs).map(t=>`<button class="${t==cur?'on':''}" data-t="${t}">${t}</button>`).join('')}</div><div class="card">${tabs[cur]()}<div class="acts"><button class="btn p" id="sv">Save changes</button>${cur=='Verification'?'<button class="btn" id="vpub">Save &amp; post panel</button><span id="vst" aria-live="polite"></span>':''}</div></div></div>`;
-document.querySelectorAll('.side button').forEach(b=>b.onclick=()=>{cur=b.dataset.t;draw()});
+const draw=()=>{app.innerHTML=`<a href="#/dashboard" style="color:var(--mu)">← Servers</a><h2 style="margin:8px 0 22px;font-size:32px">${esc(guild?.name)}</h2><div class="dash"><div class="side">${Object.keys(tabs).map(t=>`<button class="${t==cur?'on':''}" data-t="${t}">${t}</button>`).join('')}<button type="button" data-tk>🎫 Tickets</button></div><div class="card">${tabs[cur]()}<div class="acts"><button class="btn p" id="sv">Save changes</button>${cur=='Verification'?'<button class="btn" id="vpub">Save &amp; post panel</button><span id="vst" aria-live="polite"></span>':''}</div></div></div>`;
+document.querySelectorAll('.side button[data-t]').forEach(b=>b.onclick=()=>{cur=b.dataset.t;draw()});document.querySelector('[data-tk]').onclick=()=>{location.hash='#/dashboard/'+id+'/tickets'};
 if(cur=='Welcome'){const v=k=>document.querySelector('[data-k="'+k+'"]')?.value||'',pv=()=>{const ch=document.querySelector('[data-k="welcome.channel"]'),sn=guild?.name||'Server',gb=v('goodbye.message').trim();
 $('wpv').innerHTML='<p class="cap" style="margin:0 0 8px">'+(ch&&ch.value?'Preview in #'+esc(ch.selectedOptions[0].text):'Preview. The welcome channel is off, so nothing is sent yet.')+'</p>'+yp({title:sub(v('welcome.title')||'Welcome!',sn),desc:sub(v('welcome.message')||'Welcome {user} to {server}!',sn),color:v('welcome.color'),image:v('welcome.image')})+(gb?'<p class="cap" style="margin:14px 0 8px">Goodbye message</p>'+yp({text:sub(gb,sn)}):'')};
 document.querySelectorAll('[data-k^="welcome."],[data-k^="goodbye."]').forEach(e=>{e.addEventListener('input',pv);e.addEventListener('change',pv)});pv()}
 $('sv').onclick=async()=>{try{await saveNow();toast('Saved – live within 15s')}catch{toast('Could not save. Try again.')}};
 if(cur=='General')bindMR();if(cur=='Verification')bindV()};draw()}
 
-async function route(){const [,p,a,b]=location.hash.split('/');document.querySelectorAll('nav .l').forEach(x=>x.classList.toggle('on',x.getAttribute('href')=='#/'+p));scrollTo(0,0);
+async function route(){const [,p,a,b,c2]=location.hash.split('/');document.querySelectorAll('nav .l').forEach(x=>x.classList.toggle('on',x.getAttribute('href')=='#/'+p));scrollTo(0,0);
 try{if(p=='commands')await commands();else if(p=='discover')await discover();else if(p=='docs'){if(!DOCS)await docs();if(isOwner()&&a=='_new')docEditor();else if(isOwner()&&a=='_edit')docEditor(b);else await docs(a)}
 else if(p=='changelog'){if(!LOG)await changelog();if(isOwner()&&a=='_new')logEditor();else if(isOwner()&&a=='_edit')logEditor(Number(b));else await changelog()}
-else if(p=='dashboard'&&a)await guildPage(a);else if(p=='dashboard')await dashboard();else await home()}
+else if(p=='dashboard'&&a&&b=='tickets'){const m=await import('/tickets.js');await m.mount(a,c2,{app,LOGO,toast})}else if(p=='t'&&a){const m=await import('/tickets.js');await m.transcript(a,{app,LOGO,toast})}else if(p=='dashboard'&&a)await guildPage(a);else if(p=='dashboard')await dashboard();else await home()}
 catch{app.innerHTML='<section class="hero"><h1><b>Hmm.</b></h1><p class="sub">You may need to <a href="/api/login" style="color:var(--a)">log in</a>, or you do not manage this server.</p></section>'}}
 addEventListener('hashchange',route);api('me').then(m=>ME=m).catch(()=>{}).finally(route);
 </script></body></html>
