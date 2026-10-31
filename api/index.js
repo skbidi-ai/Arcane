@@ -1,5 +1,6 @@
 import pg from 'pg';
 import crypto from 'node:crypto';
+import { ticketsApi } from '../lib/tickets-api.js';
 const pool = new pg.Pool({ connectionString: process.env.NEON_DATABASE_URL, max: 3 });
 const E = process.env;
 const AUTH_URL = 'https://www.yapin.gg/oauth/authorize', TOKEN_URL = 'https://www.yapin.gg/api/oauth/token', ME_URL = 'https://www.yapin.gg/api/oauth/me';
@@ -100,6 +101,7 @@ export default async function handler(req, res) {
       }
       const { rows } = await pool.query('SELECT value FROM arcane_dashboard_state WHERE key=$1', [key]); return json(res, 200, rows[0]?.value || null);
     }
+    if (path[0] === 'transcript' || path[0] === 'tickets') return ticketsApi({ req, res, path, user, pool, json, body, allowed }); // handles its own auth (member transcripts are public by token)
     if (!user) return json(res, 401, { error: 'not logged in' });
     if (path[0] === 'me') return json(res, 200, { ...user, owner: OWNERS.includes(user.id) });
     if (path[0] === 'guilds') {
