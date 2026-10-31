@@ -383,7 +383,7 @@ export async function mount(gid, tab, helpers) {
   }
   S.tab = TABS.some((x) => x[0] === tab) ? tab : 'panels';
   H.app.innerHTML = `<div class="tkroot"><a href="#/dashboard/${esc(gid)}" style="color:var(--mu)">← Server settings</a><h2 style="margin:8px 0 22px;font-size:32px">🎫 Tickets <span style="color:var(--mu);font-weight:300">· ${esc(S.guild.name || '')}</span></h2>
-<div class="tk"><nav class="tk-nav">${TABS.map(([k, ic, l]) => `<a href="#/dashboard/${esc(gid)}/tickets/${k}" class="${k === S.tab ? 'on' : ''}"><span>${ic}</span>${l}</a>`).join('')}</nav><section id="tk-main"></section></div>
+<div class="tk"><div class="tk-nav">${TABS.map(([k, ic, l]) => `<a href="#/dashboard/${esc(gid)}/tickets/${k}" class="${k === S.tab ? 'on' : ''}"><span>${ic}</span>${l}</a>`).join('')}</div><section id="tk-main"></section></div>
 <div class="tk-bar ${S.dirty ? 'show' : ''}" id="tk-bar"><span>You have unsaved changes</span><div id="tk-errs"></div><button class="btn s" data-act="discard">Discard</button><button class="btn p s" data-act="save">Save changes</button></div></div>`;
   const root = H.app.querySelector('.tkroot');
   root.addEventListener('input', onInput); root.addEventListener('change', onInput); root.addEventListener('click', onClick);
