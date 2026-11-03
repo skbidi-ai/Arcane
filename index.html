@@ -1,156 +1,295 @@
-import pg from 'pg';
-import crypto from 'node:crypto';
-const pool = new pg.Pool({ connectionString: process.env.NEON_DATABASE_URL, max: 3 });
-const E = process.env;
-const AUTH_URL = 'https://www.yapin.gg/oauth/authorize', TOKEN_URL = 'https://www.yapin.gg/api/oauth/token', ME_URL = 'https://www.yapin.gg/api/oauth/me';
-const SITE = (E.SITE_URL || '').trim().replace(/\/+$/, ''), CID = (E.YAPPER_CLIENT_ID || '').trim(), CSEC = (E.YAPPER_CLIENT_SECRET || '').trim();
-const OWNERS = (E.BOT_OWNER_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
-const sign = (s) => crypto.createHmac('sha256', E.SESSION_SECRET).update(s).digest('base64url');
-const mkState = () => { const n = crypto.randomUUID(), t = Date.now().toString(36); return `${n}.${t}.${sign(`${n}.${t}`)}`; };
-const okState = (v) => { const [n, t, g] = String(v || '').split('.'); if (!g) return false; const w = sign(`${n}.${t}`);
-  return g.length === w.length && crypto.timingSafeEqual(Buffer.from(g), Buffer.from(w)) && Date.now() - parseInt(t, 36) < 15 * 60e3; };
-const enc = (o) => { const b = Buffer.from(JSON.stringify(o)).toString('base64url'); return `${b}.${sign(b)}`; };
-function session(req) {
-  const m = /(?:^|; )arc=([^;]+)/.exec(req.headers.cookie || ''); if (!m) return null;
-  const [b, s] = m[1].split('.'); if (!s || sign(b) !== s) return null;
-  try { const o = JSON.parse(Buffer.from(b, 'base64url')); return o.exp > Date.now() ? o : null; } catch { return null; }
-}
-const json = (res, code, o) => { res.statusCode = code; res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(o)); };
-const body = (req) => new Promise((r) => { let d = ''; req.on('data', (c) => (d += c)); req.on('end', () => { try { r(JSON.parse(d || '{}')); } catch { r({}); } }); });
-const str = (v, n = 1000) => (typeof v === 'string' ? v.slice(0, n) : undefined);
-const bool = (v) => (typeof v === 'boolean' ? v : undefined);
-const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arcane – Yapin’s best moderation, utility, leveling and fun bot</title><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#42b6b1">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060a14;--pn:#0c1424;--ln:#18243b;--tx:#eaf6ff;--mu:#7f93ad;--a:#8fdcff;--g:linear-gradient(90deg,#e4f6ff,#8fdcff 45%,#4aa7ee)}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(1000px 520px at 50% -8%,#103a6466,transparent 70%),var(--bg);color:var(--tx);font:400 16px/1.6 Poppins,system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+a{color:inherit;text-decoration:none}nav{position:sticky;top:14px;z-index:9;margin:14px auto 0;width:min(1100px,92vw);display:flex;align-items:center;gap:4px;padding:8px 10px 8px 16px;border:1px solid var(--ln);border-radius:99px;background:#0a1222cc;backdrop-filter:blur(14px)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:20px;margin-right:auto}.brand img,.brand svg{width:32px;height:32px;border-radius:9px}
+nav .l{padding:8px 15px;border-radius:99px;color:var(--mu);font-weight:500;font-size:15px}nav .l:hover{color:var(--tx)}nav .l.on{background:#16233b;color:var(--tx)}@media(max-width:760px){nav .l{display:none}}
+.btn{display:inline-flex;gap:8px;align-items:center;padding:10px 22px;border-radius:99px;border:1px solid var(--ln);background:#0e1626;color:var(--tx);font:500 15px Poppins;cursor:pointer}.btn.p{background:linear-gradient(135deg,#8fdcff,#4aa7ee);border-color:#8fdcff;color:#04121f;box-shadow:0 0 34px #58b4f255}.btn:hover{filter:brightness(1.12)}.btn.s{padding:6px 14px;font-size:13px}
+main{flex:1;width:min(1100px,92vw);margin:0 auto;padding:30px 0 80px}.hero{text-align:center;padding:46px 0 20px}
+.logo{width:104px;height:104px;border-radius:28px;border:1px solid var(--ln);background:#0d1424;display:grid;place-items:center;margin:0 auto 32px;box-shadow:0 0 90px #58b4f266}.logo img,.logo svg{width:72px;height:72px;border-radius:18px}
+h1{margin:0;font-size:clamp(32px,6.2vw,70px);line-height:1.08;letter-spacing:-.03em}h1 em{font-weight:300;color:#c9d6e3}h1 b{font-weight:800;background:var(--g);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mu);max-width:600px;margin:22px auto 30px;font-size:18px}.stat{color:var(--mu);margin-top:26px;min-height:28px}.stat b{color:var(--tx)}
+h2.t{font-size:clamp(28px,4vw,44px);text-align:center;margin:0 0 6px;letter-spacing:-.02em}p.c{text-align:center;color:var(--mu);margin:0 0 26px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:50px}.card{background:var(--pn);border:1px solid var(--ln);border-radius:20px;padding:22px;transition:.2s}.card:hover{border-color:#4aa7ee;transform:translateY(-3px);box-shadow:0 10px 40px #58b4f21f}
+.card h3{margin:8px 0 6px;font-size:18px}.card p{margin:0;color:var(--mu);font-size:14px}.ic{font-size:26px}
+input,select,textarea{width:100%;background:#09111f;border:1px solid var(--ln);color:var(--tx);border-radius:14px;padding:11px 14px;font:inherit}input:focus,textarea:focus,select:focus{outline:0;border-color:var(--a)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.chip{padding:6px 16px;border-radius:99px;border:1px solid var(--ln);background:none;color:var(--mu);cursor:pointer;font:inherit;font-size:14px}.chip.on{background:var(--a);color:#04121f;border-color:var(--a);font-weight:600}
+.cmd{display:flex;gap:14px;align-items:baseline;padding:13px 18px;border-bottom:1px solid var(--ln)}.cmd b{color:var(--a);min-width:130px;font-weight:600}.cmd span{color:var(--mu);font-size:14px}.tag{font-size:11px;background:#8fdcff22;color:var(--a);padding:2px 9px;border-radius:99px;margin-left:auto}
+.sv{display:flex;gap:14px;align-items:center}.sv .ico{width:52px;height:52px;border-radius:16px;background:#12203a;display:grid;place-items:center;font-weight:700;color:var(--a);overflow:hidden;flex:none}.sv .ico img{width:100%;height:100%;object-fit:cover}
+.docs{display:grid;grid-template-columns:230px 1fr;gap:34px}@media(max-width:760px){.docs{grid-template-columns:1fr}}.docs aside h4{margin:18px 0 6px;font-size:12px;letter-spacing:.12em;color:var(--mu);text-transform:uppercase}
+.docs aside a{display:block;padding:7px 12px;border-radius:10px;color:var(--mu);font-size:15px}.docs aside a.on,.docs aside a:hover{background:#12203a;color:var(--a)}
+.md h2{font-size:32px;margin:0 0 12px}.md h3{margin:26px 0 8px;font-size:21px}.md h4{margin:18px 0 6px}.md p,.md li{color:#c3d3e4}.md code{background:#12203a;padding:2px 8px;border-radius:7px;font:13px ui-monospace,monospace;color:var(--a)}.md pre{background:#09111f;border:1px solid var(--ln);border-radius:14px;padding:14px;overflow:auto;font:13px ui-monospace,monospace}.md a{color:var(--a);text-decoration:underline}
+.log{display:grid;grid-template-columns:150px 1fr;gap:24px;padding:30px 0;border-bottom:1px solid var(--ln)}@media(max-width:700px){.log{grid-template-columns:1fr}}.log time{color:var(--mu);font-size:14px;padding-top:10px}
+.log h3{display:flex;gap:12px;align-items:center;margin:0 0 12px;font-size:34px}.log h3 i{font:500 13px Poppins;font-style:normal;background:#12203a;color:var(--a);padding:3px 12px;border-radius:99px}.log li{margin:8px 0;color:#c3d3e4}.log li::marker{color:var(--a)}
+.dash{display:grid;grid-template-columns:220px 1fr;gap:24px}@media(max-width:760px){.dash{grid-template-columns:1fr}}.side button{display:block;width:100%;text-align:left;padding:11px 16px;margin-bottom:6px;border-radius:12px;border:0;background:none;color:var(--mu);font:500 15px Poppins;cursor:pointer}.side button.on,.side button:hover{background:#12203a;color:var(--a)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--ln)}.row small{display:block;color:var(--mu)}.row>div:last-child{min-width:220px}
+.sw{appearance:none;width:46px!important;height:26px;border-radius:99px;background:#22344f;position:relative;cursor:pointer;padding:0;border:0}.sw:checked{background:var(--a)}.sw:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}.sw:checked:after{left:23px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--a);color:#04121f;padding:12px 20px;border-radius:14px;font-weight:600;opacity:0;transition:.3s;pointer-events:none}.toast.s{opacity:1}.prev{background:#09111f;border-left:4px solid var(--a);border-radius:10px;padding:14px;margin-top:12px}
+footer{border-top:1px solid var(--ln);padding:44px 0 26px}.ft{width:min(1100px,92vw);margin:auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:30px}@media(max-width:760px){.ft{grid-template-columns:1fr 1fr}}.ft h5{margin:0 0 10px;font-size:12px;letter-spacing:.14em;color:var(--mu)}.ft a{display:block;padding:4px 0;color:#c3d3e4}.ft a:hover{color:var(--a)}.ft p{color:var(--mu);font-size:14px}
+.copy{width:min(1100px,92vw);margin:30px auto 0;padding-top:18px;border-top:1px solid var(--ln);display:flex;justify-content:space-between;color:var(--mu);font-size:14px;flex-wrap:wrap;gap:8px}
 
-// Only these keys can be changed from the website.
-function sanitize(c = {}) {
-  const w = c.welcome || {}, g = c.goodbye || {}, a = c.automod || {};
-  const xr = Number(c.xpRate);
-  return clean({
-    modlog: str(c.modlog, 64), levelChannel: str(c.levelChannel, 64), suggest: str(c.suggest, 64), autoRole: str(c.autoRole, 64),
-    xp: bool(c.xp), xpRate: xr >= 0.5 && xr <= 5 ? xr : undefined,
-    automod: Object.keys(a).length ? clean(Object.fromEntries(['spam', 'links', 'caps', 'invites', 'mentions'].map((k) => [k, bool(a[k])]))) : undefined,
-    badWords: Array.isArray(c.badWords) ? [...new Set(c.badWords.map((x) => String(x).toLowerCase().trim().slice(0, 40)).filter(Boolean))].slice(0, 200) : undefined,
-    modRoles: Array.isArray(c.modRoles) ? c.modRoles.map(String).slice(0, 25) : undefined,
-    welcome: Object.keys(w).length ? clean({ channel: str(w.channel, 64), title: str(w.title, 256), message: str(w.message, 2000), image: str(w.image, 500), footer: str(w.footer, 256), color: /^#?[0-9a-f]{6}$/i.test(w.color) ? w.color : undefined }) : undefined,
-    goodbye: Object.keys(g).length ? clean({ channel: str(g.channel, 64), message: str(g.message, 2000) }) : undefined,
-    verify: c.verify && typeof c.verify === 'object' ? sanitizeVerify(c.verify) : undefined,
-    discover: c.discover && typeof c.discover === 'object' ? clean({ enabled: bool(c.discover.enabled), description: str(c.discover.description, 300), invite: c.discover.invite === '' || /^https:\/\/\S{3,200}$/.test(c.discover.invite || '') ? c.discover.invite : undefined, banner: c.discover.banner === '' || /^https:\/\/\S{3,500}$/.test(c.discover.banner || '') ? c.discover.banner : undefined }) : undefined,
-  });
-}
-const hex6 = (v) => (/^#?[0-9a-f]{6}$/i.test(v || '') ? (String(v).startsWith('#') ? v : '#' + v) : undefined);
-// Only settings. The bot owns verify.panels and verify.count, so they are never accepted from the website.
-function sanitizeVerify(v) {
-  const e = v.embed && typeof v.embed === 'object' ? v.embed : null;
-  return clean({
-    role: str(v.role, 64), unverifiedRole: str(v.unverifiedRole, 64), channel: str(v.channel, 64),
-    label: str(v.label, 40)?.trim() || undefined, emoji: str(v.emoji, 16)?.trim() || undefined,
-    dm: bool(v.dm), log: bool(v.log),
-    embed: e ? clean({ title: str(e.title, 256), description: str(e.description, 1500), steps: str(e.steps, 1000), security: str(e.security, 1000), ready: str(e.ready, 400), footer: str(e.footer, 200), color: hex6(e.color) }) : undefined,
-  });
-}
-const slug = (x = '') => String(x).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-const cleanList = (key, items) => (Array.isArray(items) ? items : []).slice(0, 100).map((e) => (key === 'docs'
-  ? { id: slug(str(e.id, 60)), title: str(e.title, 120), category: str(e.category, 40) || 'General', body: str(e.body, 20000) || '' }
-  : { version: str(e.version, 20), tag: str(e.tag, 40) || '', date: str(e.date, 30) || '', items: (Array.isArray(e.items) ? e.items : []).map((x) => str(String(x), 500)).filter(Boolean).slice(0, 30) }))
-  .filter((e) => (key === 'docs' ? e.id && e.title : e.version));
-async function allowed(user, id) {
-  const { rows } = await pool.query('SELECT owner_id FROM arcane_guilds WHERE server_id=$1', [id]);
-  return rows[0] && (OWNERS.includes(user.id) || rows[0].owner_id === user.id);
-}
+body{overflow-x:clip}
+.btn .bi{display:inline-grid;place-items:center;width:22px;height:22px;flex:none}.btn .bi img,.btn .bi svg{width:22px;height:22px;border-radius:7px;box-shadow:0 0 0 1.5px #04121f40}
+.chip:focus-visible,.btn:focus-visible,.sc:focus-visible{outline:2px solid var(--a);outline-offset:3px}
+.strip{margin:38px calc(50% - 50vw) 0;padding:6px 0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent)}
+.trk{display:flex;width:max-content;animation:mq var(--d,40s) linear infinite}.strip:hover .trk,.strip:focus-within .trk{animation-play-state:paused}.hf{display:flex;flex:none}@keyframes mq{to{transform:translateX(-50%)}}
+.sc{display:flex;align-items:center;gap:14px;flex:none;margin-right:14px;padding:14px 24px 14px 16px;border:1px solid var(--ln);border-radius:20px;background:var(--pn);transition:border-color .2s,background .2s}.sc:hover{border-color:#4aa7ee;background:#0f1a2e}
+.sc .ico{width:46px;height:46px;border-radius:14px;background:#12203a;display:grid;place-items:center;font-weight:700;color:var(--a);overflow:hidden;flex:none}.sc .ico img{width:100%;height:100%;object-fit:cover}.sc b{display:block;font-weight:600;white-space:nowrap;line-height:1.35}.sc small{display:block;color:var(--mu);white-space:nowrap;line-height:1.35}
+@media(prefers-reduced-motion:reduce){.trk{animation:none}.strip{overflow-x:auto;-webkit-mask-image:none;mask-image:none}.hf.dup{display:none}}
+.feat{padding:84px 0 10px;text-align:center}.eb{margin:0 0 6px;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--mu);font-weight:500}.feat h2{margin:0;font-size:clamp(30px,4.6vw,52px);letter-spacing:-.025em;line-height:1.1}.fs{color:var(--mu);max-width:640px;margin:18px auto 0;font-size:17px}
+#ftabs{justify-content:center;margin:30px 0 22px}
+.fp{display:grid;grid-template-columns:1fr 1.15fr;gap:32px;text-align:left;align-items:center;background:var(--pn);border:1px solid var(--ln);border-radius:24px;padding:34px}@media(max-width:820px){.fp{grid-template-columns:1fr;padding:20px}}
+.fl h3{margin:6px 0 8px;font-size:24px}.fl p{color:var(--mu);margin:0 0 14px}.fl ul{margin:0 0 22px;padding-left:18px;color:#c3d3e4}.fl li{margin:6px 0}.fl li::marker{color:var(--a)}
+.cap{color:var(--mu);font-size:12.5px;margin:10px 2px 0}
+.yp{background:#080d19;border:1px solid var(--ln);border-radius:16px;padding:18px;text-align:left;overflow:hidden}
+.yc{display:flex;gap:6px;align-items:center;color:var(--mu);font-size:13px;margin:0 0 10px 52px}.yc b{color:var(--a);font-weight:500}
+.ym{display:flex;gap:12px}.ya{flex:none}.ya img,.ya svg{width:40px;height:40px;border-radius:50%;display:block}.yb{min-width:0;flex:1}
+.yn{font-weight:600;line-height:1.3}.yn i{font-style:normal;font-size:10px;background:var(--a);color:#04121f;border-radius:5px;padding:1px 6px;margin-left:6px;font-weight:600;vertical-align:1px}.yn time{color:var(--mu);font-size:12px;font-weight:400;margin-left:8px}
+.yt{color:#dbe7f3;font-size:15px;margin-top:2px;white-space:pre-wrap;overflow-wrap:anywhere}
+.ye{border-left:4px solid var(--ec,#8fdcff);background:#0e1626;border-radius:6px 12px 12px 6px;padding:12px 16px 12px 14px;margin-top:6px;max-width:460px}
+.ye h4{margin:0 0 4px;font-size:15px;overflow-wrap:anywhere}.ye p{margin:0;color:#c3d3e4;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.ef{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px 16px;margin-top:10px}.ef b{display:block;font-size:12px;color:#dbe7f3}.ef span{display:block;font-size:13px;color:#c3d3e4}
+.ye img.bn{display:block;width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-top:12px}.ye small{display:block;margin-top:10px;color:var(--mu);font-size:12px}
+.mn{background:#8fdcff26;color:var(--a);border-radius:5px;padding:0 4px;font-weight:500}
+@media(max-width:520px){nav{padding:8px 8px 8px 12px}nav .btn{padding:8px 13px;font-size:14px}nav .btn .bi{display:none}.brand{font-size:18px}}
+/* ── dashboard fixes + mod roles + verification ── */
+.dash>.card:hover{transform:none;box-shadow:none;border-color:var(--ln)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}.btn.s{padding:6px 14px;font-size:13px}
+.acts{margin-top:24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}#vst{color:var(--mu);font-size:14px}#vst.bad{color:#ef6b73}#vst.good{color:#5be39b}
+.fld{display:flex;flex-direction:column;padding:12px 0}.fld>span{display:block;flex:1;margin-bottom:7px}.fld>span small{display:block;color:var(--mu);font-size:12.5px;line-height:1.45}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0 18px}
+.vsec{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:30px 0 6px;padding-bottom:10px;border-bottom:1px solid var(--ln)}.vsec h4{margin:0;font-size:16px}.vsec .chips{margin:0}
+.mr{padding:0 0 22px;margin-bottom:6px;border-bottom:1px solid var(--ln)}.mrh{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.mrh small{display:block;color:var(--mu);max-width:540px;font-size:13.5px;line-height:1.5;margin-top:2px}
+.mrc{font-size:13px;color:var(--a);background:#8fdcff1a;padding:3px 12px;border-radius:99px;white-space:nowrap}
+.mrq{max-width:260px;margin-top:14px}.mrl{max-height:200px;overflow:auto;margin:12px 0 0;padding:2px}
+.rd{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:0}.chip.mrb.on .rd{box-shadow:0 0 0 2px #04121f55}
+.vh{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:20px}.vh h3{margin:0 0 4px;font-size:26px;letter-spacing:-.01em}.vh p{margin:0;max-width:420px;color:var(--mu);font-size:14px}
+.vst{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+.vk{background:#09111f;border:1px solid var(--ln);border-radius:14px;padding:7px 16px;min-width:96px}.vk b{display:block;font-size:20px;line-height:1.3}.vk small{display:block;color:var(--mu);font-size:12px;line-height:1.3}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:0 14px;border-radius:14px;font-size:13.5px;font-weight:500;border:1px solid var(--ln);color:var(--mu)}.pill:before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+.pill.ok{color:#5be39b;background:#5be39b14;border-color:#5be39b44}.pill.mid{color:#f5d36b;background:#f5d36b12;border-color:#f5d36b40}
+.vsteps{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0;padding:0}@media(max-width:760px){.vsteps{grid-template-columns:1fr}}
+.vsteps li{display:flex;gap:11px;align-items:center;padding:11px 14px;border:1px solid var(--ln);border-radius:14px;background:#09111f;font-size:14px;color:var(--mu);transition:border-color .2s,color .2s}
+.vsteps li i{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:600 13px Poppins;font-style:normal;border:1.5px solid #2a3d5c;color:var(--mu)}
+.vsteps li.on{color:var(--tx);border-color:#8fdcff44}.vsteps li.on i{background:var(--a);border-color:var(--a);color:#04121f}
+.vwin{border:1px solid var(--ln);border-radius:18px;background:linear-gradient(180deg,#0a1222,#070c17);overflow:hidden;text-align:left}
+.vwh{display:flex;align-items:center;gap:8px;padding:11px 18px;border-bottom:1px solid var(--ln);color:#dbe7f3;font-weight:500;font-size:14px}.vwh span{color:var(--mu);font-size:19px;line-height:1}
+.vwb{padding:20px 18px 22px;min-height:120px}.vwb .ye{max-width:540px}.vwb .ye h4{font-size:16px;margin-bottom:6px}.ye code{background:#16233b;color:var(--a);padding:1px 6px;border-radius:5px;font:12.5px ui-monospace,monospace}
+.vf{margin-top:14px}.vf>b{display:block;font-size:13.5px;color:#eaf6ff;margin-bottom:3px}.vf>b.vdv{color:#3a4d6b;letter-spacing:-1px;font-weight:400;overflow:hidden;white-space:nowrap}.vf div{font-size:14px;color:#c3d3e4;white-space:pre-wrap;overflow-wrap:anywhere}
+.vbtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.vbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:8px;border:0;background:#23a55a;color:#fff;font:600 14px Poppins,system-ui,sans-serif;cursor:default;box-shadow:0 1px 0 #0004}
+.dash .vbtn{cursor:pointer;transition:filter .15s,transform .1s}.dash .vbtn:hover{filter:brightness(1.12)}.dash .vbtn:active{transform:scale(.97)}.vbtn:focus-visible{outline:2px solid var(--a);outline-offset:3px}
+.vrx{display:inline-flex;gap:6px;align-items:center;margin-top:8px;padding:2px 9px;border-radius:8px;border:1px solid #8fdcff55;background:#8fdcff1a;font-size:13px;color:var(--a)}
+.veph{display:flex;gap:6px;align-items:center;flex-wrap:wrap;color:var(--mu);font-size:12.5px;margin-top:8px}.vlink{background:none;border:0;padding:0;color:var(--a);font:inherit;cursor:pointer;text-decoration:underline}
+.sws{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:9px}.swc{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;box-shadow:0 0 0 1px #ffffff26}.swc.on{border-color:#fff}.swc:focus-visible{outline:2px solid var(--a);outline-offset:3px}
+.sws input[type=color]{width:30px;height:30px;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;-webkit-appearance:none;appearance:none}.sws input[type=color]::-webkit-color-swatch-wrapper{padding:0}.sws input[type=color]::-webkit-color-swatch{border:0;border-radius:50%}.sws input[type=color]::-moz-color-swatch{border:0;border-radius:50%}
+.qe{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.qe button{width:36px;height:34px;border-radius:10px;border:1px solid var(--ln);background:#09111f;cursor:pointer;font-size:16px}.qe button:hover{border-color:var(--a)}
+</style>
+<link rel="stylesheet" href="/extras.css">
+</head><body>
+<nav><a class="brand" href="#/"><span id="nl"></span>Arcane</a><a class="l" href="#/commands">Commands</a><a class="l" href="#/discover">Discover</a><a class="l" href="#/docs">Docs</a><a class="l" href="#/changelog">Changelog</a><a class="btn p" id="add"><span class="bi" id="al"></span>Add to Yapin’</a><a class="btn" href="#/dashboard">Dashboard</a></nav>
+<main id="app"></main>
+<footer><div class="ft"><div><a class="brand" href="#/"><span id="fl"></span>Arcane</a><p>Yapin’s moderation, utility, leveling and fun bot, all set up from a web page.</p></div>
+<div><h5>PRODUCT</h5><a href="#/commands">Commands</a><a href="#/discover">Discover servers</a><a href="#/dashboard">Dashboard</a></div>
+<div><h5>RESOURCES</h5><a href="#/docs">Docs</a><a href="#/docs/getting-started">Getting started</a><a href="#/changelog">Changelog</a></div>
+<div><h5>COMMUNITY</h5><a id="add2">Add to Yapin’</a><a href="https://www.yapin.gg/invite/Arcane" target="_blank" rel="noopener">Arcane Support</a></div></div>
+<div class="copy"><span>Arcane is made independently and is not part of Yapin’.</span><span>2026 Arcane</span></div></footer>
+<div class="toast" id="toast">Saved – live within 15s</div>
+<script>
+const ADD_URL='https://www.yapin.gg/';            // change to your bot's add/invite link
+const PFP='https://arcane.bot/img/arcane-static.b84b2d62.png'; // fallback; best: save your pfp as public/arcane.png
+const EMB='<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#0e2a4a"/><path d="M50 18 78 74H64L50 44 36 74H22Z" fill="#8fdcff"/><circle cx="50" cy="66" r="6" fill="#e4f6ff"/></svg>';
+const LOGO='<img src="/arcane.png" alt="Arcane" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=PFP}else{this.outerHTML=EMB}">';
+const $=id=>document.getElementById(id),app=$('app'),fmt=n=>Number(n||0).toLocaleString('en-US');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const api=async(p,o)=>{const r=await fetch('/api/'+p,o);if(!r.ok)throw r.status;return r.json()};
+const put=(p,b)=>api(p,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(b)});
+const toast=t=>{const e=$('toast');if(t)e.textContent=t;e.classList.add('s');setTimeout(()=>e.classList.remove('s'),2200)};
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'page';let ME=null;
+$('nl').innerHTML=LOGO;$('fl').innerHTML=LOGO;$('al').innerHTML=LOGO;$('add').href=ADD_URL;$('add2').href=ADD_URL;
+function md(t){const c=[];let s=esc(t).replace(/```([\s\S]*?)```/g,(_,x)=>'\u0000'+(c.push('<pre>'+x.trim()+'</pre>')-1)+'\u0000');
+s=s.replace(/^### (.*)$/gm,'<h4>$1</h4>').replace(/^## (.*)$/gm,'<h3>$1</h3>').replace(/^# (.*)$/gm,'<h2>$1</h2>').replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
+.replace(/(^- .*(\n- .*)*)/gm,m=>'<ul>'+m.split('\n').map(l=>'<li>'+l.slice(2)+'</li>').join('')+'</ul>');
+return s.split(/\n{2,}/).map(b=>/^(<h|<ul|\u0000)/.test(b.trim())?b:'<p>'+b.replace(/\n/g,'<br>')+'</p>').join('').replace(/\u0000(\d+)\u0000/g,(_,i)=>c[i])}
 
-export default async function handler(req, res) {
-  const path = new URL(req.url, 'http://x').pathname.replace(/^\/api\/?/, '').split('/');
-  const user = session(req);
-  try {
-    if (path[0] === 'login') {
-      const state = mkState();
-      const q = new URLSearchParams({ client_id: CID, redirect_uri: `${SITE}/api/callback`, response_type: 'code', scope: 'identify', state });
-      res.statusCode = 302; res.setHeader('location', `${AUTH_URL}?${q}`); return res.end();
-    }
-    if (path[0] === 'callback') {
-      const u = new URL(req.url, 'http://x'); 
-      if (!okState(u.searchParams.get('state'))) return json(res, 400, { error: 'bad state', hint: 'login link expired, start again from the site' });
-      const t = await (await fetch(TOKEN_URL, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', code: u.searchParams.get('code'), client_id: CID, client_secret: CSEC, redirect_uri: `${SITE}/api/callback` }) })).json();
-      let p = t.user;
-      if (!p && t.access_token) p = await (await fetch(ME_URL, { headers: { authorization: `Bearer ${t.access_token}` } })).json();
-      p = p?.user || p; const id = p?.id || p?.sub; if (!id) return json(res, 401, { error: 'login failed' });
-      res.setHeader('set-cookie', `arc=${enc({ id: String(id), name: p.display_name || p.username || p.name || 'User', avatar: p.avatar_url || p.avatar || null, exp: Date.now() + 7 * 864e5 })}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
-      res.statusCode = 302; res.setHeader('location', '/#/dashboard'); return res.end();
-    }
-    if (path[0] === 'logout') { res.setHeader('set-cookie', 'arc=; Path=/; Max-Age=0'); return json(res, 200, { ok: true }); }
-    if (path[0] === 'registry') { // public: real command list published by the bot
-      const { rows } = await pool.query("SELECT value FROM arcane_dashboard_state WHERE key='registry'"); return json(res, 200, rows[0]?.value || []);
-    }
-    if (path[0] === 'stats') {
-      res.setHeader('cache-control', 'public, s-maxage=30');
-      const { rows } = await pool.query('SELECT count(*)::int AS servers, coalesce(sum(member_count),0)::int AS members FROM arcane_guilds'); return json(res, 200, rows[0]);
-    }
-    if (path[0] === 'discover') { // opt-in only: servers that switched Discover on in their dashboard
-      const q = (new URL(req.url, 'http://x').searchParams.get('q') || '').slice(0, 60);
-      const { rows } = await pool.query(`SELECT g.server_id, g.name, g.icon, g.member_count, s.config->'discover' AS d, COALESCE((s.config->>'spotlight')='true', false) AS spot FROM arcane_guilds g JOIN arcane_guild_settings s USING (server_id)
-        WHERE (s.config->'discover'->>'enabled') = 'true' AND ($1 = '' OR g.name ILIKE '%'||$1||'%' OR (s.config->'discover'->>'description') ILIKE '%'||$1||'%') ORDER BY spot DESC, g.member_count DESC NULLS LAST LIMIT 40`, [q]);
-      return json(res, 200, rows);
-    }
-    if (path[0] === 'leaderboard' && path[1]) { // public: only for servers that listed themselves on Discover
-      const g = await pool.query(`SELECT g.name, g.icon, g.member_count, s.config->'discover' AS d FROM arcane_guilds g JOIN arcane_guild_settings s USING (server_id) WHERE g.server_id=$1 AND (s.config->'discover'->>'enabled') = 'true'`, [path[1]]);
-      if (!g.rows[0]) return json(res, 404, { error: 'not listed' });
-      const { rows } = await pool.query('SELECT value FROM arcane_dashboard_state WHERE key=$1', ['lb:' + path[1]]);
-      return json(res, 200, { guild: g.rows[0], rows: rows[0]?.value || [] });
-    }
-    if (path[0] === 'docs' || path[0] === 'changelog') { // public read, owner-only write
-      const key = path[0];
-      if (req.method === 'PUT') {
-        if (!user || !OWNERS.includes(user.id)) return json(res, 403, { error: 'owner only' });
-        const list = cleanList(key, (await body(req)).items);
-        await pool.query(`INSERT INTO arcane_dashboard_state (key,value) VALUES ($1,$2::jsonb) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_at=now()`, [key, JSON.stringify(list)]);
-      }
-      const { rows } = await pool.query('SELECT value FROM arcane_dashboard_state WHERE key=$1', [key]); return json(res, 200, rows[0]?.value || null);
-    }
-    if (!user) return json(res, 401, { error: 'not logged in' });
-    if (path[0] === 'me') return json(res, 200, { ...user, owner: OWNERS.includes(user.id) });
-    if (path[0] === 'guilds') {
-      const { rows } = await pool.query('SELECT server_id,name,icon,member_count FROM arcane_guilds WHERE owner_id=$1 OR $2', [user.id, OWNERS.includes(user.id)]);
-      return json(res, 200, rows);
-    }
-    if (path[0] === 'guild' && path[1]) {
-      if (!(await allowed(user, path[1]))) return json(res, 403, { error: 'forbidden' });
-      if (path[2] === 'action') { // jobs for the bot (picked up on its 15s sync)
-        await pool.query(`CREATE TABLE IF NOT EXISTS arcane_actions (id bigserial PRIMARY KEY, server_id text NOT NULL, type text NOT NULL, payload jsonb NOT NULL DEFAULT '{}'::jsonb,
-          status text NOT NULL DEFAULT 'pending', result text, created_at timestamptz NOT NULL DEFAULT now(), done_at timestamptz)`);
-        if (req.method === 'POST') {
-          const b = await body(req);
-          if (b.type !== 'verify_panel') return json(res, 400, { error: 'unknown action' });
-          const channel = str(b.channel, 64);
-          if (!channel) return json(res, 400, { error: 'channel required' });
-          const busy = await pool.query("SELECT 1 FROM arcane_actions WHERE server_id=$1 AND type=$2 AND status IN ('pending','running') AND created_at > now() - interval '10 minutes'", [path[1], b.type]);
-          if (busy.rowCount) return json(res, 429, { error: 'A panel is already waiting to be posted' });
-          const { rows } = await pool.query('INSERT INTO arcane_actions (server_id,type,payload) VALUES ($1,$2,$3::jsonb) RETURNING id', [path[1], b.type, JSON.stringify({ channel })]);
-          return json(res, 200, { id: String(rows[0].id), status: 'pending' });
-        }
-        const { rows } = await pool.query('SELECT id::text, status, result FROM arcane_actions WHERE server_id=$1 AND id=$2', [path[1], /^\d+$/.test(path[3] || '') ? path[3] : '0']);
-        return rows[0] ? json(res, 200, rows[0]) : json(res, 404, { error: 'not found' });
-      }
-      if (req.method === 'PUT') {
-        const patch = sanitize((await body(req)).config);
-        // Top-level keys replace, but `verify` is merged one level deep so the bot's panels + count survive a save.
-        await pool.query(`INSERT INTO arcane_guild_settings (server_id,config) VALUES ($1,$2::jsonb)
-          ON CONFLICT (server_id) DO UPDATE SET config =
-            (arcane_guild_settings.config || (EXCLUDED.config - 'verify'))
-            || CASE WHEN EXCLUDED.config ? 'verify'
-                 THEN jsonb_build_object('verify', COALESCE(arcane_guild_settings.config->'verify', '{}'::jsonb) || (EXCLUDED.config->'verify'))
-                 ELSE '{}'::jsonb END,
-            updated_at=now()`, [path[1], JSON.stringify(patch)]);
-      }
-      const [g, s] = await Promise.all([pool.query('SELECT * FROM arcane_guilds WHERE server_id=$1', [path[1]]), pool.query('SELECT config FROM arcane_guild_settings WHERE server_id=$1', [path[1]])]);
-      return json(res, 200, { guild: g.rows[0], config: s.rows[0]?.config || {} });
-    }
-    if (path[0] === 'commands' && OWNERS.includes(user.id)) { // global on/off, picked up by the bot within 15s
-      if (req.method === 'PUT') {
-        const list = ((await body(req)).commands || []).map((c) => ({ name: String(c.name).slice(0, 32), description: String(c.description).slice(0, 100) }));
-        await pool.query(`INSERT INTO arcane_dashboard_state (key,value) VALUES ('commands',$1::jsonb) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_at=now()`, [JSON.stringify(list)]);
-      }
-      const { rows } = await pool.query("SELECT value FROM arcane_dashboard_state WHERE key='commands'"); return json(res, 200, rows[0]?.value || null);
-    }
-    json(res, 404, { error: 'not found' });
-  } catch (e) { console.error(e); json(res, 500, { error: 'server error' }); }
-}
+const DOCS_D=[{id:'getting-started',title:'Getting started',category:'Basics',body:'# Getting started\nAdd Arcane to a server you manage, then open the **Dashboard** and log in with Yapin’.\n\n## Quick setup\n- Give Arcane a role with the permissions it needs (Manage messages, Kick, Ban, Timeout)\n- Run `/config show` to see your settings\n- Pick your mod roles in **Dashboard → General**\n- Set a mod log with `/config modlog #channel`\n\nEverything you change in the dashboard reaches the bot within 15 seconds.'},
+{id:'moderation',title:'Moderation',category:'Features',body:'# Moderation\nUse `/warn`, `/timeout`, `/kick` and `/ban`. Every action gets a case number you can look up with `/case`.\n\n## Automatic punishments\n- 3 warnings: 1 hour timeout\n- 5 warnings: kick'},
+{id:'verification',title:'Verification',category:'Features',body:'# Verification\nHold new members at the door until they click a button.\n\n## Set it up\n- Open **Dashboard → Verification**\n- Choose the verified role and a channel\n- Edit the embed and watch the preview update\n- Click **Save & post panel**\n\n## In chat\n- `/verify` shows help and setup commands\n- `/verify set role <role>` sets the verified role\n- `/verification [#channel]` posts the panel\n\nMake sure Arcane\'s role sits above the verified role.'},
+{id:'automod',title:'Automod',category:'Features',body:'# Automod\nTurn on spam, links, caps, invites and mention protection in **Dashboard → Automod**. Add banned words there too.'}];
+const LOG_D=[{version:'1.0',tag:'Launch',date:'Oct 25, 2026',items:['Arcane is live with moderation, automod, leveling, economy and fun commands','Web dashboard: change settings and see them in the bot within seconds','Server discovery, docs and changelog']}];
+let DOCS=null,LOG=null;const isOwner=()=>!!(ME&&ME.owner);
+
+const hex=c=>/^#?[0-9a-f]{6}$/i.test(c||'')?'#'+String(c).replace('#',''):'#8fdcff';
+const mn=t=>`<span class="mn">${esc(t)}</span>`;
+const sub=(t,sv)=>esc(t).replace(/\{user\}/g,mn('@NewMember')).replace(/\{server\}/g,esc(sv));
+// Yapin’-style message preview. Callers pass already-escaped HTML.
+const yp=o=>`<div class="yp">${o.cmd?`<div class="yc">${mn('@Member')} used <b>${esc(o.cmd)}</b></div>`:''}<div class="ym"><div class="ya">${LOGO}</div><div class="yb"><div class="yn">Arcane<i>BOT</i><time>Today at 3:42 PM</time></div>${o.text?`<div class="yt">${o.text}</div>`:''}${o.title||o.desc?`<div class="ye" style="--ec:${hex(o.color)}">${o.title?`<h4>${o.title}</h4>`:''}${o.desc?`<p>${o.desc}</p>`:''}${o.fields?`<div class="ef">${o.fields.map(f=>`<div><b>${f[0]}</b><span>${f[1]}</span></div>`).join('')}</div>`:''}${/^https:\/\//.test(o.image||'')?`<img class="bn" src="${esc(o.image)}" alt="" onerror="this.remove()">`:''}${o.footer?`<small>${o.footer}</small>`:''}</div>`:''}</div></div></div>`;
+// ── Verification: shared defaults + embed preview (dashboard and home page) ──
+const VD={title:'✦ WELCOME TO THE COMMUNITY',description:"We're glad to have you here! Before accessing the server, please complete verification to confirm that you're a real member and agree to follow our community guidelines.",steps:'`01` · Read and agree to the server rules.\n`02` · Click the verification button below.\n`03` · Gain access to the community and enjoy your stay!',security:'Your verification helps keep the server safe, welcoming, and free from bots.\nBy verifying, you agree to follow all server rules and staff instructions.',ready:'**Ready to get started?**\nClick the **{button}** button below to unlock the server.',footer:'Secure verification · one click',color:'#74c9f4'};
+const imd=s=>esc(s).replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
+const vtext=(v,k)=>String(((v.embed&&v.embed[k])||'').trim()||VD[k]).replace(/\{button\}/g,v.label||'Verify').replace(/\{server\}/g,v.server||'Your Server');
+const fld=(t,s,i)=>`<label class="fld"><span><b>${t}</b>${s?`<small>${s}</small>`:''}</span>${i}</label>`;
+function vpv(v,o={}){const e=v.embed||{},em=esc(v.emoji||'✅'),lb=esc(v.label||'Verify'),role=mn('@'+(o.role||'Verified'));
+const head=`<div class="vwh"><span>#</span>${esc(o.channel||'verify')}</div>`,nm='<div class="yn">Arcane<i>BOT</i><time>Today at 3:42 PM</time></div>';
+const body=o.view=='click'
+?`<div class="ym"><div class="ya">${LOGO}</div><div class="yb">${nm}<div class="ye" style="--ec:#2ecc71"><h4>✅ Verified</h4><p>You're verified and now have ${role}. Welcome aboard! 🎉</p></div><div class="veph">Only you can see this · <button type="button" class="vlink" data-vback>Back to the panel</button></div></div></div>`
+:`<div class="ym"><div class="ya">${LOGO}</div><div class="yb">${nm}<div class="ye" style="--ec:${hex(e.color||VD.color)}"><h4>${imd(vtext(v,'title'))}</h4><p>${imd(vtext(v,'description'))}</p><div class="vf"><b>✧ HOW TO VERIFY</b><div>${imd(vtext(v,'steps'))}</div></div><div class="vf"><b>🔒 Secure Verification</b><div>${imd(vtext(v,'security'))}</div></div><div class="vf"><b class="vdv">━━━━━━━━━━━━━━━━━━━━</b><div>${imd(vtext(v,'ready'))}</div></div><small>${esc(vtext(v,'footer'))}</small></div><div class="vbtns"><button type="button" class="vbtn" data-vclick>${em} ${lb}</button></div><div class="vrx">${em} <span>1</span></div></div></div>`;
+return `<div class="vwin" role="group" aria-label="Preview of the verification panel">${head}<div class="vwb">${body}</div></div>`}
+
+const FEAT=[
+{k:'Welcome',ic:'👋',t:'Greet new members',d:'Send a custom embed to every new member, with your own title, message, banner and color.',pts:['Use {user} and {server} in the message','Add a banner image and pick the color','Set a goodbye message too'],
+ pv:()=>yp({title:sub('Welcome to {server}!','Your Server'),desc:sub('Welcome {user}, glad you’re here. Read the rules and say hi!','Your Server'),color:'#8fdcff',footer:'Member #1,204'})},
+{k:'Verification',ic:'✅',t:'Verify new members',d:'Post a verification panel with a one-click button. Members who verify get the role you choose.',pts:['Choose the verified role and an optional starting role','Edit the embed and watch it update live in the dashboard','Reaction fallback if buttons are unavailable'],
+ pv:()=>vpv({label:'Verify',emoji:'✅',server:'Your Server',embed:{}},{channel:'verify',role:'Verified'})},
+{k:'Moderation',ic:'🛡️',t:'Moderate from chat',d:'Warn, timeout, kick and ban. Every action gets a case number you can look up later.',pts:['Look up any action with /case','Actions are posted in your mod log channel','Automatic timeout at 3 warnings, kick at 5'],
+ pv:()=>yp({cmd:'/warn @Member spam',title:'Member warned',color:'#f5b84a',fields:[['Case','#14'],['Member','@Member'],['Moderator','@YourMod'],['Reason','spam']]})},
+{k:'Automod',ic:'🤖',t:'Keep chat clean automatically',d:'Remove spam, links, invites, shouting and mass mentions, and block your own banned words.',pts:['Switch each filter on or off','Add banned words in Dashboard → Automod'],
+ pv:()=>yp({title:'Message removed',desc:`${mn('@Member')}, invite links aren’t allowed in this server.`,color:'#ef6b73',footer:'Automod: invites'})},
+{k:'Leveling',ic:'📈',t:'Reward active members',d:'Members earn XP for chatting, climb levels and unlock role rewards.',pts:['Set an XP multiplier from 0.5 to 5','Send level-ups to their own channel','Rank cards show progress'],
+ pv:()=>yp({title:'Level up!',desc:`${mn('@Member')} reached level 7.`,color:'#7be3a5',fields:[['XP','1,840 / 2,100'],['Next reward','Level 10 role']]})},
+{k:'Economy',ic:'🪙',t:'Give members something to earn',d:'Collect daily coins, work for more, then spend or gamble them on slots.',pts:['Daily and work rewards','Slots and gambling games'],
+ pv:()=>yp({cmd:'/daily',title:'Daily reward',desc:'You collected 250 coins.',color:'#f5d36b',fields:[['Balance','1,430 coins'],['Next daily','in 24 hours']]})},
+{k:'Fun',ic:'🎲',t:'Games, polls and reminders',d:'Trivia, polls, reminders and more to keep your server active.',pts:['Run a poll in one command','Set reminders for yourself or your team'],
+ pv:()=>yp({cmd:'/trivia',title:'Trivia',desc:'Which planet has the most moons?\n\nA. Mars\nB. Saturn\nC. Venus',color:'#b79cff',footer:'Answer in 20 seconds'})}];
+
+function strip(r){const el=$('sp');if(!el||!r.length)return;const reps=Math.max(1,Math.ceil(8/r.length)),L=Array.from({length:reps},()=>r).flat();
+const card=s=>{const inv=/^https:\/\//.test(s.d?.invite||'');return `<a class="sc" ${inv?`href="${esc(s.d.invite)}" target="_blank" rel="noopener"`:'href="#/discover"'}><div class="ico">${s.icon&&/^https?:/.test(s.icon)?`<img src="${esc(s.icon)}" alt="">`:esc((s.name||'?')[0])}</div><div><b>${esc(s.name)}</b><small>${fmt(s.member_count)} members</small></div></a>`};
+const half=L.map(card).join('');
+el.innerHTML=`<div class="strip" aria-label="Servers using Arcane"><div class="trk" style="--d:${Math.max(30,L.length*5)}s"><div class="hf">${half}</div><div class="hf dup" aria-hidden="true">${half.replace(/<a /g,'<a tabindex="-1" ')}</div></div></div>`}
+
+async function home(){
+app.innerHTML=`<section class="hero"><div class="logo">${LOGO}</div><h1><em>Arcane is Yapin’s</em><br><b>best moderation, utility, leveling and fun bot.</b></h1><p class="sub">Everything your community needs, configured from a clean web dashboard and live in seconds.</p><a class="btn p" href="${ADD_URL}"><span class="bi">${LOGO}</span>Add to Yapin’</a> <a class="btn" href="#/commands">Commands</a><div class="stat" id="st"></div></section>
+<div id="sp"></div>
+<section class="feat"><p class="eb">What Arcane does</p><h2>One bot for the whole server.</h2><p class="fs">Pick a feature to see it the way your members see it. Everything is set up from the dashboard and goes live within seconds.</p><div class="chips" id="ftabs" role="tablist"></div><div class="fp" id="fp"></div><p class="cap">Sample messages. Your settings change how they look in your server.</p></section>`;
+let cur=0;const drawF=()=>{$('ftabs').innerHTML=FEAT.map((f,i)=>`<button role="tab" aria-selected="${i==cur}" class="chip ${i==cur?'on':''}" data-i="${i}">${f.k}</button>`).join('');
+const f=FEAT[cur];$('fp').innerHTML=`<div class="fl"><div class="ic">${f.ic}</div><h3>${f.t}</h3><p>${f.d}</p><ul>${f.pts.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><a class="btn s" href="#/dashboard">Set it up</a></div><div class="fr">${f.pv()}</div>`;
+document.querySelectorAll('#ftabs .chip').forEach(b=>b.onclick=()=>{cur=+b.dataset.i;drawF()})};drawF();
+api('stats').then(x=>{if($('st'))$('st').innerHTML=`Powering <b>${fmt(x.members)}</b> members across <b>${fmt(x.servers)}</b> servers`}).catch(()=>{});
+api('discover?q=').then(strip).catch(()=>{})}
+
+async function commands(){app.innerHTML='<h2 class="t">Commands</h2><p class="c">Everything Arcane can do.</p><input id="q" placeholder="Search commands…"><div class="chips" id="ch"></div><div class="card" style="padding:0" id="ls"></div>';
+let list=[];try{list=await api('registry')}catch{}let cat='All',q='';const cats=['All',...new Set(list.map(c=>c.category))];
+const draw=()=>{$('ch').innerHTML=cats.map(c=>`<button class="chip ${c==cat?'on':''}" data-c="${esc(c)}">${esc(c)}</button>`).join('');
+$('ls').innerHTML=list.filter(c=>(cat=='All'||c.category==cat)&&(c.name+c.description).toLowerCase().includes(q)).map(c=>`<div class="cmd"><b>/${esc(c.name)}</b><span>${esc(c.description)}</span>${c.mod?'<i class="tag">MOD</i>':''}</div>`).join('')||'<div class="cmd"><span>No commands yet. The bot publishes its list when it starts.</span></div>';
+document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{cat=b.dataset.c;draw()})};$('q').oninput=e=>{q=e.target.value.toLowerCase();draw()};draw()}
+
+async function discover(){app.innerHTML='<h2 class="t">Discover servers</h2><p class="c">Communities that use Arcane. Server owners opt in from the dashboard.</p><input id="q" placeholder="Search servers…" autofocus><div class="grid" id="ls" style="margin-top:26px"></div>';let tm;
+const load=async()=>{let r=[];try{r=await api('discover?q='+encodeURIComponent($('q').value))}catch{}
+$('ls').innerHTML=r.map(s=>`<div class="card"><div class="sv"><div class="ico">${s.icon&&/^https?:/.test(s.icon)?`<img src="${esc(s.icon)}" alt="">`:esc((s.name||'?')[0])}</div><div><b>${esc(s.name)}</b><br><small style="color:var(--mu)">${fmt(s.member_count)} members</small></div></div><p style="margin:12px 0">${esc(s.d?.description||'')}</p>${/^https:\/\//.test(s.d?.invite||'')?`<a class="btn s p" href="${esc(s.d.invite)}" target="_blank" rel="noopener">Join server</a>`:''}</div>`).join('')||'<div class="card"><p>No servers found.</p></div>'};
+$('q').oninput=()=>{clearTimeout(tm);tm=setTimeout(load,250)};load()}
+
+async function docs(id){if(!DOCS){try{const d=await api('docs');DOCS=d&&d.length?d:DOCS_D}catch{DOCS=DOCS_D}}
+const cats=[...new Set(DOCS.map(d=>d.category))],cur=DOCS.find(d=>d.id==id)||DOCS[0];
+app.innerHTML=`<div class="docs"><aside>${isOwner()?'<a class="btn s p" href="#/docs/_new" style="margin-bottom:8px">＋ New page</a>':''}${cats.map(c=>`<h4>${esc(c)}</h4>${DOCS.filter(d=>d.category==c).map(d=>`<a href="#/docs/${d.id}" class="${d.id==cur.id?'on':''}">${esc(d.title)}</a>`).join('')}`).join('')}</aside><article class="md">${isOwner()?`<a class="btn s" href="#/docs/_edit/${cur.id}" style="float:right">Edit</a>`:''}${md(cur.body)}</article></div>`}
+function docEditor(id){const d=DOCS.find(x=>x.id==id)||{title:'',category:'Features',body:''};
+app.innerHTML=`<div class="card"><h3>${id?'Edit page':'New page'}</h3><p style="margin:10px 0 4px">Title</p><input id="dt" value="${esc(d.title)}"><p style="margin:10px 0 4px">Category</p><input id="dc" value="${esc(d.category)}"><p style="margin:10px 0 4px">Content (markdown: # headings, **bold**, \`code\`, - lists, [links](https://…))</p><textarea id="db" rows="14">${esc(d.body)}</textarea><div style="margin-top:14px;display:flex;gap:10px"><button class="btn p" id="ds">Save</button><a class="btn" href="#/docs/${id||''}">Cancel</a>${id?'<button class="btn" id="dd" style="margin-left:auto">Delete</button>':''}</div></div>`;
+const commit=async l=>{await put('docs',{items:l});DOCS=l};
+$('ds').onclick=async()=>{const t=$('dt').value.trim();if(!t)return;const n={id:id||slug(t),title:t,category:$('dc').value.trim()||'General',body:$('db').value};
+await commit(id?DOCS.map(x=>x.id==id?n:x):[...DOCS,n]);toast('Page saved');location.hash='#/docs/'+n.id};
+if(id)$('dd').onclick=async()=>{if(confirm('Delete this page?')){await commit(DOCS.filter(x=>x.id!=id));location.hash='#/docs'}}}
+
+async function changelog(){if(!LOG){try{const d=await api('changelog');LOG=d&&d.length?d:LOG_D}catch{LOG=LOG_D}}
+app.innerHTML=`<h2 class="t">Changelog</h2><p class="c">What changed in Arcane, newest first.</p>${isOwner()?'<div style="text-align:center;margin-bottom:10px"><a class="btn s p" href="#/changelog/_new">＋ New release</a></div>':''}${LOG.map((e,i)=>`<div class="log"><time>${esc(e.date)}</time><div><h3>${esc(e.version)} ${e.tag?`<i>${esc(e.tag)}</i>`:''}${isOwner()?`<a class="btn s" href="#/changelog/_edit/${i}" style="margin-left:auto">Edit</a>`:''}</h3><ul>${e.items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div>`).join('')}`}
+function logEditor(i){const e=LOG[i]||{version:'',tag:'',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),items:[]};
+app.innerHTML=`<div class="card"><h3>${i!==undefined?'Edit release':'New release'}</h3><p style="margin:10px 0 4px">Version</p><input id="lv" value="${esc(e.version)}"><p style="margin:10px 0 4px">Tag (short title)</p><input id="lt" value="${esc(e.tag)}"><p style="margin:10px 0 4px">Date</p><input id="ld" value="${esc(e.date)}"><p style="margin:10px 0 4px">Changes (one per line)</p><textarea id="li" rows="8">${esc(e.items.join('\n'))}</textarea><div style="margin-top:14px;display:flex;gap:10px"><button class="btn p" id="ls">Save</button><a class="btn" href="#/changelog">Cancel</a>${i!==undefined?'<button class="btn" id="ldel" style="margin-left:auto">Delete</button>':''}</div></div>`;
+const commit=async l=>{await put('changelog',{items:l});LOG=l};
+$('ls').onclick=async()=>{const n={version:$('lv').value.trim(),tag:$('lt').value.trim(),date:$('ld').value.trim(),items:$('li').value.split('\n').map(s=>s.trim()).filter(Boolean)};if(!n.version)return;
+await commit(i!==undefined?LOG.map((x,k)=>k==i?n:x):[n,...LOG]);toast('Release saved');location.hash='#/changelog'};
+if(i!==undefined)$('ldel').onclick=async()=>{if(confirm('Delete this release?')){await commit(LOG.filter((_,k)=>k!=i));location.hash='#/changelog'}}}
+
+async function dashboard(){let me;try{me=await api('me')}catch{app.innerHTML='<section class="hero"><h1><b>Log in</b></h1><p class="sub">Sign in with Yapin’ to manage your servers.</p><a class="btn p" href="/api/login">Login with Yapin’</a></section>';return}
+const gs=await api('guilds');app.innerHTML=`<h2 class="t">Hey, ${esc(me.name)}</h2><p class="c">Pick a server to configure.</p><div class="grid" id="gl" style="margin-top:20px"></div>`;
+$('gl').innerHTML=gs.map(g=>`<a class="card" href="#/dashboard/${esc(g.server_id)}"><div class="sv"><div class="ico">${g.icon&&/^https?:/.test(g.icon)?`<img src="${esc(g.icon)}" alt="">`:esc((g.name||'?')[0])}</div><div><b>${esc(g.name)}</b><br><small style="color:var(--mu)">${fmt(g.member_count)} members</small></div></div></a>`).join('')||'<div class="card"><p>No servers yet. Add Arcane to a server you own and give it a minute.</p></div>'}
+
+async function guildPage(id){const {guild,config:c}=await api('guild/'+id);for(const k of['welcome','goodbye','automod','discover'])c[k]||={};c.badWords||=[];
+const chs=guild?.channels||[],opt=(l,v,ph)=>`<option value="">${ph}</option>`+l.map(x=>`<option value="${esc(x.id)}" ${x.id==v?'selected':''}>${esc(x.name)}</option>`).join('');
+const row=(t,s,i)=>`<div class="row"><div><b>${t}</b><small>${s}</small></div><div>${i}</div></div>`,sel=(k,v,ph)=>`<select data-k="${k}">${opt(chs,v,ph)}</select>`,sw=(k,v)=>`<input type="checkbox" class="sw" data-k="${k}" ${v?'checked':''}>`;
+const roles=(guild?.roles||[]).filter(r=>r&&r.id&&r.name&&r.name!=='@everyone');
+const fixV=()=>{c.verify||={};c.verify.embed||={};c.verify.panels||={};c.verify.count||=0;c.modRoles||=[]};fixV();
+const rcol=r=>{let x=r.color;if(typeof x=='number'&&x>0)x='#'+x.toString(16).padStart(6,'0');return/^#[0-9a-f]{6}$/i.test(x||'')&&x.toLowerCase()!='#000000'?x:'#6b7c93'};
+// ── mod roles ──
+let mr=[...c.modRoles],mrq='',vview='panel';
+const mrChips=()=>{const q=mrq.toLowerCase(),l=roles.filter(r=>r.name.toLowerCase().includes(q));return l.map(r=>`<button type="button" class="chip mrb ${mr.includes(r.id)?'on':''}" data-r="${esc(r.id)}" aria-pressed="${mr.includes(r.id)}"><i class="rd" style="background:${rcol(r)}"></i>${esc(r.name)}</button>`).join('')||`<span class="cap">${roles.length?'No roles match that search.':'No roles to show yet. They appear a few minutes after Arcane joins the server.'}</span>`};
+const modBlock=()=>`<div class="mr"><div class="mrh"><div><b>Mod roles</b><small>Members with these roles can use mod commands like /warn, /timeout and /ban. Administrators and the server owner always can.</small></div><span class="mrc" id="mrc"></span></div>${roles.length>10?'<input id="mrq" class="mrq" placeholder="Search roles…" aria-label="Search roles">':''}<div class="chips mrl" id="mrl"></div></div>`;
+const bindMR=()=>{const cnt=()=>{$('mrc').textContent=mr.length?mr.length+' selected':'None selected'};
+$('mrl').innerHTML=mrChips();cnt();
+$('mrl').onclick=e=>{const b=e.target.closest('[data-r]');if(!b)return;const i=b.dataset.r;mr=mr.includes(i)?mr.filter(x=>x!=i):[...mr,i];b.classList.toggle('on',mr.includes(i));b.setAttribute('aria-pressed',mr.includes(i));cnt()};
+if($('mrq'))$('mrq').oninput=e=>{mrq=e.target.value;$('mrl').innerHTML=mrChips()}};
+// ── verification ──
+const vsel=(k,v,ph)=>`<select data-k="${k}">${opt(roles,v,ph)}</select>`;
+const verifyTab=()=>{const v=c.verify,e=v.embed,iv=k=>esc(e[k]!=null&&String(e[k]).trim()?e[k]:VD[k]),col=hex(e.color||VD.color);
+const SW=['#74c9f4','#8fdcff','#2ecc71','#f5b942','#e91e8c','#b79cff','#ef6b73'],EM=['✅','🔓','✔️','🛡️','🔑','⭐','🎉'];
+return `<div class="vh"><div><h3>Verification</h3><p>Hold new members at the door until they click a button. Verified members get the role you choose.</p></div><div class="vst"><span class="pill" id="vpill"></span><div class="vk"><b>${fmt(v.count)}</b><small>verified so far</small></div><div class="vk"><b>${Object.keys(v.panels).length}</b><small>live panels</small></div></div></div>
+<ol class="vsteps" id="vsteps"><li><i>1</i>Choose the verified role</li><li><i>2</i>Choose a channel</li><li><i>3</i>Post the panel</li></ol>
+<div class="vsec"><h4>Preview</h4><div class="chips vtog"><button type="button" class="chip on" data-vv="panel" aria-pressed="true">Panel</button><button type="button" class="chip" data-vv="click" aria-pressed="false">After they click</button></div></div>
+<div id="vpv" style="margin-top:14px"></div><p class="cap">Click the button in the preview to see what a member sees. Yapin’ may space things slightly differently.</p>
+<div class="vsec"><h4>Access</h4></div>
+<div class="fg">${fld('Verified role','Given when a member verifies',vsel('verify.role',v.role,'Not set'))}${fld('Starting role','Optional. New members get it on join and lose it when they verify',vsel('verify.unverifiedRole',v.unverifiedRole,'None'))}${fld('Panel channel','Where the panel is posted',sel('verify.channel',v.channel,'Choose a channel'))}</div>
+${roles.length?'':'<p class="cap">No roles to pick from yet. They appear a few minutes after Arcane joins the server.</p>'}
+<div class="vsec"><h4>Button</h4></div>
+<div class="fg">${fld('Label','Up to 40 characters',`<input data-k="verify.label" maxlength="40" value="${esc(v.label||'Verify')}">`)}${fld('Emoji','Also used for the reaction fallback',`<input data-k="verify.emoji" maxlength="16" value="${esc(v.emoji||'✅')}"><div class="qe" id="vem">${EM.map(x=>`<button type="button" data-e="${x}" aria-label="Use ${x}">${x}</button>`).join('')}</div>`)}</div>
+${row('DM members when they verify','A short confirmation message, sent privately',sw('verify.dm',v.dm!==false))}${row('Log verifications','Post each one to the mod log channel',sw('verify.log',v.log!==false))}
+<div class="vsec"><h4>Embed text</h4><button type="button" class="btn s" id="vreset">Reset to default</button></div>
+<p class="cap" style="margin:8px 0 0">Use {button} for the button label and {server} for the server name. **bold** and \`code\` work too.</p>
+${fld('Title','',`<input data-k="verify.embed.title" maxlength="256" value="${iv('title')}">`)}${fld('Description','',`<textarea data-k="verify.embed.description" rows="3" maxlength="1500">${iv('description')}</textarea>`)}
+<div class="fg">${fld('How to verify','One step per line',`<textarea data-k="verify.embed.steps" rows="4" maxlength="1000">${iv('steps')}</textarea>`)}${fld('Security note','',`<textarea data-k="verify.embed.security" rows="4" maxlength="1000">${iv('security')}</textarea>`)}</div>
+<div class="fg">${fld('Closing line','',`<textarea data-k="verify.embed.ready" rows="3" maxlength="400">${iv('ready')}</textarea>`)}${fld('Footer','',`<input data-k="verify.embed.footer" maxlength="200" value="${iv('footer')}">`)}</div>
+${fld('Accent color','Hex, e.g. #74c9f4',`<input data-k="verify.embed.color" maxlength="7" value="${esc(col)}" style="max-width:180px"><div class="sws" id="vsw">${SW.map(x=>`<button type="button" class="swc" data-c="${x}" style="background:${x}" aria-label="Use ${x}"></button>`).join('')}<input type="color" id="vcp" value="${esc(col)}" aria-label="Pick a custom color"></div>`)}`};
+const bindV=()=>{const q=k=>document.querySelector('[data-k="'+k+'"]'),val=k=>q(k)?.value??'',selTxt=k=>{const e=q(k);return e&&e.value?e.selectedOptions[0].text:''};
+const say=(t,cls='')=>{const s=$('vst');if(s){s.textContent=t;s.className=cls}};
+const pr=()=>{if(!$('vpv'))return;
+const V={label:val('verify.label').trim()||'Verify',emoji:val('verify.emoji').trim()||'✅',server:guild?.name,embed:{}};
+for(const k of['title','description','steps','security','ready','footer','color'])V.embed[k]=val('verify.embed.'+k);
+$('vpv').innerHTML=vpv(V,{view:vview,channel:selTxt('verify.channel'),role:selTxt('verify.role')});
+const r=!!val('verify.role'),ch=!!val('verify.channel'),pub=Object.keys(c.verify.panels).length>0;
+[...$('vsteps').children].forEach((li,i)=>{const on=[r,ch,pub][i];li.classList.toggle('on',on);li.firstChild.textContent=on?'✓':String(i+1)});
+const p=$('vpill');p.className='pill '+(r&&ch&&pub?'ok':r?'mid':'');p.textContent=r&&ch&&pub?'Live':r?'Almost there':'Not set up';
+$('vpub').disabled=!(r&&ch);
+document.querySelectorAll('.vtog .chip').forEach(b=>{const on=b.dataset.vv==vview;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+const cc=val('verify.embed.color').toLowerCase();document.querySelectorAll('.swc').forEach(b=>b.classList.toggle('on',b.dataset.c==cc));if(/^#[0-9a-f]{6}$/i.test(cc))$('vcp').value=cc};
+document.querySelectorAll('[data-k^="verify."]').forEach(e=>{e.addEventListener('input',pr);e.addEventListener('change',pr)});
+document.querySelector('.vtog').onclick=e=>{const b=e.target.closest('[data-vv]');if(b){vview=b.dataset.vv;pr()}};
+$('vpv').onclick=e=>{if(e.target.closest('[data-vclick]')){vview='click';pr()}else if(e.target.closest('[data-vback]')){vview='panel';pr()}};
+$('vsw').onclick=e=>{const b=e.target.closest('[data-c]');if(b){q('verify.embed.color').value=b.dataset.c;pr()}};
+$('vcp').oninput=e=>{q('verify.embed.color').value=e.target.value;pr()};
+$('vem').onclick=e=>{const b=e.target.closest('[data-e]');if(b){q('verify.emoji').value=b.dataset.e;pr()}};
+$('vreset').onclick=()=>{for(const k of['title','description','steps','security','ready','footer','color'])q('verify.embed.'+k).value=VD[k];pr();say('Text reset. Save to keep it.')};
+$('vpub').onclick=async()=>{$('vpub').disabled=true;say('Saving…');
+try{await saveNow();const a=await api('guild/'+id+'/action',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type:'verify_panel',channel:c.verify.channel})});
+say('Queued. Arcane posts it within 15 seconds…');
+for(let i=0;i<14;i++){await new Promise(r=>setTimeout(r,3000));if(!$('vst'))return;const s=await api('guild/'+id+'/action/'+a.id);
+if(s.status=='done'){const nm=selTxt('verify.channel');const g2=await api('guild/'+id);c.verify=g2.config.verify||c.verify;fixV();say('Posted'+(nm?' in #'+nm:'')+'. Members can verify now.','good');pr();return}
+if(s.status=='error'){say('Could not post it: '+s.result,'bad');return}}
+say('Still waiting on the bot. Check that Arcane is online, then try again.','bad')}
+catch(e){say(e==429?'A panel is already waiting to be posted.':'Something went wrong. Try again.','bad')}
+finally{pr()}};
+pr()};
+const tabs={General:()=>modBlock()+row('Mod log channel','Moderation actions are posted here',sel('modlog',c.modlog,'Off'))+row('Suggestions channel','',sel('suggest',c.suggest,'Off'))+row('Level-up channel','Empty = same channel',sel('levelChannel',c.levelChannel,'Same channel'))+row('XP enabled','',sw('xp',c.xp!==false))+row('XP multiplier','0.5 to 5',`<input data-k="xpRate" type="number" step="0.5" min="0.5" max="5" value="${c.xpRate??1}">`),
+Automod:()=>['spam','links','caps','invites','mentions'].map(k=>row(k[0].toUpperCase()+k.slice(1),'Auto-moderate '+k,sw('automod.'+k,c.automod[k]??(k=='spam'||k=='mentions')))).join('')+row('Banned words','Comma separated, messages are auto-deleted',`<textarea data-k="badWords" rows="3">${esc(c.badWords.join(', '))}</textarea>`),
+Welcome:()=>'<div id="wpv" style="margin:4px 0 10px"></div>'+row('Welcome channel','',sel('welcome.channel',c.welcome.channel,'Off'))+row('Title','',`<input data-k="welcome.title" value="${esc(c.welcome.title)}">`)+row('Message','Use {user} and {server}',`<textarea data-k="welcome.message" rows="3">${esc(c.welcome.message)}</textarea>`)+row('Banner image URL','Yapin’ upload, imgur, tenor, giphy or GitHub link',`<input data-k="welcome.image" value="${esc(c.welcome.image)}">`)+row('Color','Hex, e.g. #8fdcff',`<input data-k="welcome.color" value="${esc(c.welcome.color||'#8fdcff')}">`)+row('Goodbye channel','',sel('goodbye.channel',c.goodbye.channel,'Off'))+row('Goodbye message','',`<textarea data-k="goodbye.message" rows="2">${esc(c.goodbye.message)}</textarea>`),
+Discover:()=>row('List in Discover','Show this server on the public Discover page',sw('discover.enabled',c.discover.enabled))+row('Description','Up to 300 characters',`<textarea data-k="discover.description" rows="3">${esc(c.discover.description)}</textarea>`)+row('Invite link','https link people use to join',`<input data-k="discover.invite" value="${esc(c.discover.invite)}">`)+row('Banner image URL','Wide https image shown on the Discover page',`<input data-k="discover.banner" value="${esc(c.discover.banner)}">`),
+Verification:()=>verifyTab()};
+let cur='General';
+const collect=()=>{const p={};document.querySelectorAll('[data-k]').forEach(e=>{const k=e.dataset.k.split('.');let v=e.type=='checkbox'?e.checked:e.value;if(e.dataset.k=='badWords')v=v.split(',').map(s=>s.trim()).filter(Boolean);if(e.dataset.k=='xpRate')v=Number(v);let o=p;k.slice(0,-1).forEach(x=>o=o[x]||={});o[k.at(-1)]=v});if(cur=='General')p.modRoles=mr;return p};
+const saveNow=async()=>{const r=await put('guild/'+id,{config:collect()});Object.assign(c,r.config);fixV();if(cur=='General')mr=[...c.modRoles];return r};
+const draw=()=>{app.innerHTML=`<a href="#/dashboard" style="color:var(--mu)">← Servers</a><h2 style="margin:8px 0 22px;font-size:32px">${esc(guild?.name)}</h2><div class="dash"><div class="side">${Object.keys(tabs).map(t=>`<button class="${t==cur?'on':''}" data-t="${t}">${t}</button>`).join('')}</div><div class="card">${tabs[cur]()}<div class="acts"><button class="btn p" id="sv">Save changes</button>${cur=='Verification'?'<button class="btn" id="vpub">Save &amp; post panel</button><span id="vst" aria-live="polite"></span>':''}</div></div></div>`;
+document.querySelectorAll('.side button').forEach(b=>b.onclick=()=>{cur=b.dataset.t;draw()});
+if(cur=='Welcome'){const v=k=>document.querySelector('[data-k="'+k+'"]')?.value||'',pv=()=>{const ch=document.querySelector('[data-k="welcome.channel"]'),sn=guild?.name||'Server',gb=v('goodbye.message').trim();
+$('wpv').innerHTML='<p class="cap" style="margin:0 0 8px">'+(ch&&ch.value?'Preview in #'+esc(ch.selectedOptions[0].text):'Preview. The welcome channel is off, so nothing is sent yet.')+'</p>'+yp({title:sub(v('welcome.title')||'Welcome!',sn),desc:sub(v('welcome.message')||'Welcome {user} to {server}!',sn),color:v('welcome.color'),image:v('welcome.image')})+(gb?'<p class="cap" style="margin:14px 0 8px">Goodbye message</p>'+yp({text:sub(gb,sn)}):'')};
+document.querySelectorAll('[data-k^="welcome."],[data-k^="goodbye."]').forEach(e=>{e.addEventListener('input',pv);e.addEventListener('change',pv)});pv()}
+$('sv').onclick=async()=>{try{await saveNow();toast('Saved – live within 15s')}catch{toast('Could not save. Try again.')}};
+if(cur=='General')bindMR();if(cur=='Verification')bindV()};draw()}
+
+async function route(){const [,p,a,b]=location.hash.split('/');document.querySelectorAll('nav .l').forEach(x=>x.classList.toggle('on',x.getAttribute('href')=='#/'+p));scrollTo(0,0);
+try{if(p=='commands')await commands();else if(p=='discover')await discover();else if(p=='docs'){if(!DOCS)await docs();if(isOwner()&&a=='_new')docEditor();else if(isOwner()&&a=='_edit')docEditor(b);else await docs(a)}
+else if(p=='changelog'){if(!LOG)await changelog();if(isOwner()&&a=='_new')logEditor();else if(isOwner()&&a=='_edit')logEditor(Number(b));else await changelog()}
+else if(p=='embeds')await embedsPage();else if(p=='custom-bots')await customBotsPage();else if(p=='status')await statusPage();else if(p=='privacy'||p=='terms')await legalPage(p);else if(p=='leaderboard')await leaderboardPage(a);
+else if(p=='dashboard'&&a)await guildPage(a);else if(p=='dashboard')await dashboard();else await home()}
+catch{app.innerHTML='<section class="hero"><h1><b>Hmm.</b></h1><p class="sub">You may need to <a href="/api/login" style="color:var(--a)">log in</a>, or you do not manage this server.</p></section>'}}
+addEventListener('hashchange',route);api('me').then(m=>ME=m).catch(()=>{}).finally(route);
+</script>
+<script src="/extras.js"></script>
+</body></html>
