@@ -1,6 +1,5 @@
 import pg from 'pg';
 import crypto from 'node:crypto';
-import { ticketsApi } from '../lib/tickets-api.js';
 const pool = new pg.Pool({ connectionString: process.env.NEON_DATABASE_URL, max: 3 });
 const E = process.env;
 const AUTH_URL = 'https://www.yapin.gg/oauth/authorize', TOKEN_URL = 'https://www.yapin.gg/api/oauth/token', ME_URL = 'https://www.yapin.gg/api/oauth/me';
@@ -35,7 +34,7 @@ function sanitize(c = {}) {
     welcome: Object.keys(w).length ? clean({ channel: str(w.channel, 64), title: str(w.title, 256), message: str(w.message, 2000), image: str(w.image, 500), footer: str(w.footer, 256), color: /^#?[0-9a-f]{6}$/i.test(w.color) ? w.color : undefined }) : undefined,
     goodbye: Object.keys(g).length ? clean({ channel: str(g.channel, 64), message: str(g.message, 2000) }) : undefined,
     verify: c.verify && typeof c.verify === 'object' ? sanitizeVerify(c.verify) : undefined,
-    discover: c.discover && typeof c.discover === 'object' ? clean({ enabled: bool(c.discover.enabled), description: str(c.discover.description, 300), invite: c.discover.invite === '' || /^https:\/\/\S{3,200}$/.test(c.discover.invite || '') ? c.discover.invite : undefined }) : undefined,
+    discover: c.discover && typeof c.discover === 'object' ? clean({ enabled: bool(c.discover.enabled), description: str(c.discover.description, 300), invite: c.discover.invite === '' || /^https:\/\/\S{3,200}$/.test(c.discover.invite || '') ? c.discover.invite : undefined, banner: c.discover.banner === '' || /^https:\/\/\S{3,500}$/.test(c.discover.banner || '') ? c.discover.banner : undefined }) : undefined,
   });
 }
 const hex6 = (v) => (/^#?[0-9a-f]{6}$/i.test(v || '') ? (String(v).startsWith('#') ? v : '#' + v) : undefined);
@@ -88,9 +87,15 @@ export default async function handler(req, res) {
     }
     if (path[0] === 'discover') { // opt-in only: servers that switched Discover on in their dashboard
       const q = (new URL(req.url, 'http://x').searchParams.get('q') || '').slice(0, 60);
-      const { rows } = await pool.query(`SELECT g.server_id, g.name, g.icon, g.member_count, s.config->'discover' AS d FROM arcane_guilds g JOIN arcane_guild_settings s USING (server_id)
-        WHERE (s.config->'discover'->>'enabled') = 'true' AND ($1 = '' OR g.name ILIKE '%'||$1||'%' OR (s.config->'discover'->>'description') ILIKE '%'||$1||'%') ORDER BY g.member_count DESC NULLS LAST LIMIT 40`, [q]);
+      const { rows } = await pool.query(`SELECT g.server_id, g.name, g.icon, g.member_count, s.config->'discover' AS d, COALESCE((s.config->>'spotlight')='true', false) AS spot FROM arcane_guilds g JOIN arcane_guild_settings s USING (server_id)
+        WHERE (s.config->'discover'->>'enabled') = 'true' AND ($1 = '' OR g.name ILIKE '%'||$1||'%' OR (s.config->'discover'->>'description') ILIKE '%'||$1||'%') ORDER BY spot DESC, g.member_count DESC NULLS LAST LIMIT 40`, [q]);
       return json(res, 200, rows);
+    }
+    if (path[0] === 'leaderboard' && path[1]) { // public: only for servers that listed themselves on Discover
+      const g = await pool.query(`SELECT g.name, g.icon, g.member_count, s.config->'discover' AS d FROM arcane_guilds g JOIN arcane_guild_settings s USING (server_id) WHERE g.server_id=$1 AND (s.config->'discover'->>'enabled') = 'true'`, [path[1]]);
+      if (!g.rows[0]) return json(res, 404, { error: 'not listed' });
+      const { rows } = await pool.query('SELECT value FROM arcane_dashboard_state WHERE key=$1', ['lb:' + path[1]]);
+      return json(res, 200, { guild: g.rows[0], rows: rows[0]?.value || [] });
     }
     if (path[0] === 'docs' || path[0] === 'changelog') { // public read, owner-only write
       const key = path[0];
@@ -101,7 +106,6 @@ export default async function handler(req, res) {
       }
       const { rows } = await pool.query('SELECT value FROM arcane_dashboard_state WHERE key=$1', [key]); return json(res, 200, rows[0]?.value || null);
     }
-    if (path[0] === 'transcript' || path[0] === 'tickets') return ticketsApi({ req, res, path, user, pool, json, body, allowed }); // handles its own auth (member transcripts are public by token)
     if (!user) return json(res, 401, { error: 'not logged in' });
     if (path[0] === 'me') return json(res, 200, { ...user, owner: OWNERS.includes(user.id) });
     if (path[0] === 'guilds') {
