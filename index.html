@@ -1,127 +1,156 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Arcane – Yapin’s best moderation, utility, leveling and fun bot</title><link rel="icon" href="/arcane.png">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,800&display=swap" rel="stylesheet">
-<script>
-  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-</script>
-<script defer src="/_vercel/insights/script.js"></script>
-<style>
-:root{--bg:#060a14;--pn:#0c1424;--ln:#18243b;--tx:#eaf6ff;--mu:#7f93ad;--a:#8fdcff;--g:linear-gradient(90deg,#e4f6ff,#8fdcff 45%,#4aa7ee)}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(1000px 520px at 50% -8%,#103a6466,transparent 70%),var(--bg);color:var(--tx);font:400 16px/1.6 Poppins,system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
-a{color:inherit;text-decoration:none}nav{position:sticky;top:14px;z-index:9;margin:14px auto 0;width:min(1100px,92vw);display:flex;align-items:center;gap:4px;padding:8px 10px 8px 16px;border:1px solid var(--ln);border-radius:99px;background:#0a1222cc;backdrop-filter:blur(14px)}
-.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:20px;margin-right:auto}.brand img,.brand svg{width:32px;height:32px;border-radius:9px}
-nav .l{padding:8px 15px;border-radius:99px;color:var(--mu);font-weight:500;font-size:15px}nav .l:hover{color:var(--tx)}nav .l.on{background:#16233b;color:var(--tx)}@media(max-width:760px){nav .l{display:none}}
-.btn{display:inline-flex;gap:8px;align-items:center;padding:10px 22px;border-radius:99px;border:1px solid var(--ln);background:#0e1626;color:var(--tx);font:500 15px Poppins;cursor:pointer}.btn.p{background:linear-gradient(135deg,#8fdcff,#4aa7ee);border-color:#8fdcff;color:#04121f;box-shadow:0 0 34px #58b4f255}.btn:hover{filter:brightness(1.12)}.btn.s{padding:6px 14px;font-size:13px}
-main{flex:1;width:min(1100px,92vw);margin:0 auto;padding:30px 0 80px}.hero{text-align:center;padding:46px 0 20px}
-.logo{width:104px;height:104px;border-radius:28px;border:1px solid var(--ln);background:#0d1424;display:grid;place-items:center;margin:0 auto 32px;box-shadow:0 0 90px #58b4f266}.logo img,.logo svg{width:72px;height:72px;border-radius:18px}
-h1{margin:0;font-size:clamp(32px,6.2vw,70px);line-height:1.08;letter-spacing:-.03em}h1 em{font-weight:300;color:#c9d6e3}h1 b{font-weight:800;background:var(--g);-webkit-background-clip:text;background-clip:text;color:transparent}
-.sub{color:var(--mu);max-width:600px;margin:22px auto 30px;font-size:18px}.stat{color:var(--mu);margin-top:26px;min-height:28px}.stat b{color:var(--tx)}
-h2.t{font-size:clamp(28px,4vw,44px);text-align:center;margin:0 0 6px;letter-spacing:-.02em}p.c{text-align:center;color:var(--mu);margin:0 0 26px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:50px}.card{background:var(--pn);border:1px solid var(--ln);border-radius:20px;padding:22px;transition:.2s}.card:hover{border-color:#4aa7ee;transform:translateY(-3px);box-shadow:0 10px 40px #58b4f21f}
-.card h3{margin:8px 0 6px;font-size:18px}.card p{margin:0;color:var(--mu);font-size:14px}.ic{font-size:26px}
-input,select,textarea{width:100%;background:#09111f;border:1px solid var(--ln);color:var(--tx);border-radius:14px;padding:11px 14px;font:inherit}input:focus,textarea:focus,select:focus{outline:0;border-color:var(--a)}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.chip{padding:6px 16px;border-radius:99px;border:1px solid var(--ln);background:none;color:var(--mu);cursor:pointer;font:inherit;font-size:14px}.chip.on{background:var(--a);color:#04121f;border-color:var(--a);font-weight:600}
-.cmd{display:flex;gap:14px;align-items:baseline;padding:13px 18px;border-bottom:1px solid var(--ln)}.cmd b{color:var(--a);min-width:130px;font-weight:600}.cmd span{color:var(--mu);font-size:14px}.tag{font-size:11px;background:#8fdcff22;color:var(--a);padding:2px 9px;border-radius:99px;margin-left:auto}
-.sv{display:flex;gap:14px;align-items:center}.sv .ico{width:52px;height:52px;border-radius:16px;background:#12203a;display:grid;place-items:center;font-weight:700;color:var(--a);overflow:hidden;flex:none}.sv .ico img{width:100%;height:100%;object-fit:cover}
-.docs{display:grid;grid-template-columns:230px 1fr;gap:34px}@media(max-width:760px){.docs{grid-template-columns:1fr}}.docs aside h4{margin:18px 0 6px;font-size:12px;letter-spacing:.12em;color:var(--mu);text-transform:uppercase}
-.docs aside a{display:block;padding:7px 12px;border-radius:10px;color:var(--mu);font-size:15px}.docs aside a.on,.docs aside a:hover{background:#12203a;color:var(--a)}
-.md h2{font-size:32px;margin:0 0 12px}.md h3{margin:26px 0 8px;font-size:21px}.md h4{margin:18px 0 6px}.md p,.md li{color:#c3d3e4}.md code{background:#12203a;padding:2px 8px;border-radius:7px;font:13px ui-monospace,monospace;color:var(--a)}.md pre{background:#09111f;border:1px solid var(--ln);border-radius:14px;padding:14px;overflow:auto;font:13px ui-monospace,monospace}.md a{color:var(--a);text-decoration:underline}
-.log{display:grid;grid-template-columns:150px 1fr;gap:24px;padding:30px 0;border-bottom:1px solid var(--ln)}@media(max-width:700px){.log{grid-template-columns:1fr}}.log time{color:var(--mu);font-size:14px;padding-top:10px}
-.log h3{display:flex;gap:12px;align-items:center;margin:0 0 12px;font-size:34px}.log h3 i{font:500 13px Poppins;font-style:normal;background:#12203a;color:var(--a);padding:3px 12px;border-radius:99px}.log li{margin:8px 0;color:#c3d3e4}.log li::marker{color:var(--a)}
-.dash{display:grid;grid-template-columns:220px 1fr;gap:24px}@media(max-width:760px){.dash{grid-template-columns:1fr}}.side button{display:block;width:100%;text-align:left;padding:11px 16px;margin-bottom:6px;border-radius:12px;border:0;background:none;color:var(--mu);font:500 15px Poppins;cursor:pointer}.side button.on,.side button:hover{background:#12203a;color:var(--a)}
-.row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--ln)}.row small{display:block;color:var(--mu)}.row>div:last-child{min-width:220px}
-.sw{appearance:none;width:46px!important;height:26px;border-radius:99px;background:#22344f;position:relative;cursor:pointer;padding:0;border:0}.sw:checked{background:var(--a)}.sw:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}.sw:checked:after{left:23px}
-.toast{position:fixed;bottom:24px;right:24px;background:var(--a);color:#04121f;padding:12px 20px;border-radius:14px;font-weight:600;opacity:0;transition:.3s;pointer-events:none}.toast.s{opacity:1}.prev{background:#09111f;border-left:4px solid var(--a);border-radius:10px;padding:14px;margin-top:12px}
-footer{border-top:1px solid var(--ln);padding:44px 0 26px}.ft{width:min(1100px,92vw);margin:auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:30px}@media(max-width:760px){.ft{grid-template-columns:1fr 1fr}}.ft h5{margin:0 0 10px;font-size:12px;letter-spacing:.14em;color:var(--mu)}.ft a{display:block;padding:4px 0;color:#c3d3e4}.ft a:hover{color:var(--a)}.ft p{color:var(--mu);font-size:14px}
-.copy{width:min(1100px,92vw);margin:30px auto 0;padding-top:18px;border-top:1px solid var(--ln);display:flex;justify-content:space-between;color:var(--mu);font-size:14px;flex-wrap:wrap;gap:8px}
-</style></head><body>
-<nav><a class="brand" href="#/"><span id="nl"></span>Arcane</a><a class="l" href="#/commands">Commands</a><a class="l" href="#/discover">Discover</a><a class="l" href="#/docs">Docs</a><a class="l" href="#/changelog">Changelog</a><a class="btn p" id="add">Add to Yapin’</a><a class="btn" href="#/dashboard">Dashboard</a></nav>
-<main id="app"></main>
-<footer><div class="ft"><div><a class="brand" href="#/"><span id="fl"></span>Arcane</a><p>Yapin’s moderation, utility, leveling and fun bot, all set up from a web page.</p></div>
-<div><h5>PRODUCT</h5><a href="#/commands">Commands</a><a href="#/discover">Discover servers</a><a href="#/dashboard">Dashboard</a></div>
-<div><h5>RESOURCES</h5><a href="#/docs">Docs</a><a href="#/docs/getting-started">Getting started</a><a href="#/changelog">Changelog</a></div>
-<div><h5>COMMUNITY</h5><a id="add2">Add to Yapin’</a><a href="https://www.yapin.gg/invite/developers" target="_blank" rel="noopener">Yapin’ Devs</a></div></div>
-<div class="copy"><span>Arcane is made independently and is not part of Yapin’.</span><span>© 2026 Arcane</span></div></footer>
-<div class="toast" id="toast">Saved – live in the bot within 15s</div>
-<script>
-const ADD_URL='https://www.yapin.gg/';            // change to your bot's add/invite link
-const PFP='https://arcane.bot/img/arcane-static.b84b2d62.png'; // fallback; best: save your pfp as public/arcane.png
-const EMB='<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#0e2a4a"/><path d="M50 18 78 74H64L50 44 36 74H22Z" fill="#8fdcff"/><circle cx="50" cy="66" r="6" fill="#e4f6ff"/></svg>';
-const LOGO='<img src="/arcane.png" alt="Arcane" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=PFP}else{this.outerHTML=EMB}">';
-const $=id=>document.getElementById(id),app=$('app'),fmt=n=>Number(n||0).toLocaleString('en-US');
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const api=async(p,o)=>{const r=await fetch('/api/'+p,o);if(!r.ok)throw r.status;return r.json()};
-const put=(p,b)=>api(p,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(b)});
-const toast=t=>{const e=$('toast');if(t)e.textContent=t;e.classList.add('s');setTimeout(()=>e.classList.remove('s'),2200)};
-const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'page';let ME=null;
-$('nl').innerHTML=LOGO;$('fl').innerHTML=LOGO;$('add').href=ADD_URL;$('add2').href=ADD_URL;
-function md(t){const c=[];let s=esc(t).replace(/```([\s\S]*?)```/g,(_,x)=>'\u0000'+(c.push('<pre>'+x.trim()+'</pre>')-1)+'\u0000');
-s=s.replace(/^### (.*)$/gm,'<h4>$1</h4>').replace(/^## (.*)$/gm,'<h3>$1</h3>').replace(/^# (.*)$/gm,'<h2>$1</h2>').replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
-.replace(/(^- .*(\n- .*)*)/gm,m=>'<ul>'+m.split('\n').map(l=>'<li>'+l.slice(2)+'</li>').join('')+'</ul>');
-return s.split(/\n{2,}/).map(b=>/^(<h|<ul|\u0000)/.test(b.trim())?b:'<p>'+b.replace(/\n/g,'<br>')+'</p>').join('').replace(/\u0000(\d+)\u0000/g,(_,i)=>c[i])}
+import pg from 'pg';
+import crypto from 'node:crypto';
+const pool = new pg.Pool({ connectionString: process.env.NEON_DATABASE_URL, max: 3 });
+const E = process.env;
+const AUTH_URL = 'https://www.yapin.gg/oauth/authorize', TOKEN_URL = 'https://www.yapin.gg/api/oauth/token', ME_URL = 'https://www.yapin.gg/api/oauth/me';
+const SITE = (E.SITE_URL || '').trim().replace(/\/+$/, ''), CID = (E.YAPPER_CLIENT_ID || '').trim(), CSEC = (E.YAPPER_CLIENT_SECRET || '').trim();
+const OWNERS = (E.BOT_OWNER_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
+const sign = (s) => crypto.createHmac('sha256', E.SESSION_SECRET).update(s).digest('base64url');
+const mkState = () => { const n = crypto.randomUUID(), t = Date.now().toString(36); return `${n}.${t}.${sign(`${n}.${t}`)}`; };
+const okState = (v) => { const [n, t, g] = String(v || '').split('.'); if (!g) return false; const w = sign(`${n}.${t}`);
+  return g.length === w.length && crypto.timingSafeEqual(Buffer.from(g), Buffer.from(w)) && Date.now() - parseInt(t, 36) < 15 * 60e3; };
+const enc = (o) => { const b = Buffer.from(JSON.stringify(o)).toString('base64url'); return `${b}.${sign(b)}`; };
+function session(req) {
+  const m = /(?:^|; )arc=([^;]+)/.exec(req.headers.cookie || ''); if (!m) return null;
+  const [b, s] = m[1].split('.'); if (!s || sign(b) !== s) return null;
+  try { const o = JSON.parse(Buffer.from(b, 'base64url')); return o.exp > Date.now() ? o : null; } catch { return null; }
+}
+const json = (res, code, o) => { res.statusCode = code; res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(o)); };
+const body = (req) => new Promise((r) => { let d = ''; req.on('data', (c) => (d += c)); req.on('end', () => { try { r(JSON.parse(d || '{}')); } catch { r({}); } }); });
+const str = (v, n = 1000) => (typeof v === 'string' ? v.slice(0, n) : undefined);
+const bool = (v) => (typeof v === 'boolean' ? v : undefined);
+const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
 
-const DOCS_D=[{id:'getting-started',title:'Getting started',category:'Basics',body:'# Getting started\nAdd Arcane to a server you manage, then open the **Dashboard** and log in with Yapin’.\n\n## Quick setup\n- Give Arcane a role with the permissions it needs (Manage messages, Kick, Ban, Timeout)\n- Run `/config show` to see your settings\n- Set a mod log with `/config modlog #channel`\n\nEverything you change in the dashboard reaches the bot within 15 seconds.'},
-{id:'moderation',title:'Moderation',category:'Features',body:'# Moderation\nUse `/warn`, `/timeout`, `/kick` and `/ban`. Every action gets a case number you can look up with `/case`.\n\n## Automatic punishments\n- 3 warnings: 1 hour timeout\n- 5 warnings: kick'},
-{id:'automod',title:'Automod',category:'Features',body:'# Automod\nTurn on spam, links, caps, invites and mention protection in **Dashboard → Automod**. Add banned words there too.'}];
-const LOG_D=[{version:'1.0',tag:'Launch',date:'Oct 25, 2026',items:['Arcane is live with moderation, automod, leveling, economy and fun commands','Web dashboard: change settings and see them in the bot within seconds','Server discovery, docs and changelog']}];
-let DOCS=null,LOG=null;const isOwner=()=>!!(ME&&ME.owner);
+// Only these keys can be changed from the website.
+function sanitize(c = {}) {
+  const w = c.welcome || {}, g = c.goodbye || {}, a = c.automod || {};
+  const xr = Number(c.xpRate);
+  return clean({
+    modlog: str(c.modlog, 64), levelChannel: str(c.levelChannel, 64), suggest: str(c.suggest, 64), autoRole: str(c.autoRole, 64),
+    xp: bool(c.xp), xpRate: xr >= 0.5 && xr <= 5 ? xr : undefined,
+    automod: Object.keys(a).length ? clean(Object.fromEntries(['spam', 'links', 'caps', 'invites', 'mentions'].map((k) => [k, bool(a[k])]))) : undefined,
+    badWords: Array.isArray(c.badWords) ? [...new Set(c.badWords.map((x) => String(x).toLowerCase().trim().slice(0, 40)).filter(Boolean))].slice(0, 200) : undefined,
+    modRoles: Array.isArray(c.modRoles) ? c.modRoles.map(String).slice(0, 25) : undefined,
+    welcome: Object.keys(w).length ? clean({ channel: str(w.channel, 64), title: str(w.title, 256), message: str(w.message, 2000), image: str(w.image, 500), footer: str(w.footer, 256), color: /^#?[0-9a-f]{6}$/i.test(w.color) ? w.color : undefined }) : undefined,
+    goodbye: Object.keys(g).length ? clean({ channel: str(g.channel, 64), message: str(g.message, 2000) }) : undefined,
+    verify: c.verify && typeof c.verify === 'object' ? sanitizeVerify(c.verify) : undefined,
+    discover: c.discover && typeof c.discover === 'object' ? clean({ enabled: bool(c.discover.enabled), description: str(c.discover.description, 300), invite: c.discover.invite === '' || /^https:\/\/\S{3,200}$/.test(c.discover.invite || '') ? c.discover.invite : undefined, banner: c.discover.banner === '' || /^https:\/\/\S{3,500}$/.test(c.discover.banner || '') ? c.discover.banner : undefined }) : undefined,
+  });
+}
+const hex6 = (v) => (/^#?[0-9a-f]{6}$/i.test(v || '') ? (String(v).startsWith('#') ? v : '#' + v) : undefined);
+// Only settings. The bot owns verify.panels and verify.count, so they are never accepted from the website.
+function sanitizeVerify(v) {
+  const e = v.embed && typeof v.embed === 'object' ? v.embed : null;
+  return clean({
+    role: str(v.role, 64), unverifiedRole: str(v.unverifiedRole, 64), channel: str(v.channel, 64),
+    label: str(v.label, 40)?.trim() || undefined, emoji: str(v.emoji, 16)?.trim() || undefined,
+    dm: bool(v.dm), log: bool(v.log),
+    embed: e ? clean({ title: str(e.title, 256), description: str(e.description, 1500), steps: str(e.steps, 1000), security: str(e.security, 1000), ready: str(e.ready, 400), footer: str(e.footer, 200), color: hex6(e.color) }) : undefined,
+  });
+}
+const slug = (x = '') => String(x).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const cleanList = (key, items) => (Array.isArray(items) ? items : []).slice(0, 100).map((e) => (key === 'docs'
+  ? { id: slug(str(e.id, 60)), title: str(e.title, 120), category: str(e.category, 40) || 'General', body: str(e.body, 20000) || '' }
+  : { version: str(e.version, 20), tag: str(e.tag, 40) || '', date: str(e.date, 30) || '', items: (Array.isArray(e.items) ? e.items : []).map((x) => str(String(x), 500)).filter(Boolean).slice(0, 30) }))
+  .filter((e) => (key === 'docs' ? e.id && e.title : e.version));
+async function allowed(user, id) {
+  const { rows } = await pool.query('SELECT owner_id FROM arcane_guilds WHERE server_id=$1', [id]);
+  return rows[0] && (OWNERS.includes(user.id) || rows[0].owner_id === user.id);
+}
 
-async function home(){const F=[['🛡️','Moderation','Warnings, timeouts, bans and case history.'],['🤖','Automod','Spam, links, caps, invites and banned words.'],['📈','Leveling','XP, rank cards and role rewards.'],['👋','Welcome cards','Custom welcome and goodbye embeds.'],['🪙','Economy','Daily, work, slots and gambling.'],['🎲','Fun & utility','Trivia, polls, reminders and more.']];
-app.innerHTML=`<section class="hero"><div class="logo">${LOGO}</div><h1><em>Arcane is Yapin’s</em><br><b>best moderation, utility, leveling and fun bot.</b></h1><p class="sub">Everything your community needs, configured from a clean web dashboard and live in seconds.</p><a class="btn p" href="${ADD_URL}">Add to Yapin’</a> <a class="btn" href="#/commands">Commands</a><div class="stat" id="st"></div></section>
-<div class="grid">${F.map(f=>`<div class="card"><div class="ic">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div>`;
-try{const s=await api('stats');$('st').innerHTML=`Powering <b>${fmt(s.members)}</b> members across <b>${fmt(s.servers)}</b> servers`}catch{}}
-
-async function commands(){app.innerHTML='<h2 class="t">Commands</h2><p class="c">Everything Arcane can do.</p><input id="q" placeholder="Search commands…"><div class="chips" id="ch"></div><div class="card" style="padding:0" id="ls"></div>';
-let list=[];try{list=await api('registry')}catch{}let cat='All',q='';const cats=['All',...new Set(list.map(c=>c.category))];
-const draw=()=>{$('ch').innerHTML=cats.map(c=>`<button class="chip ${c==cat?'on':''}" data-c="${esc(c)}">${esc(c)}</button>`).join('');
-$('ls').innerHTML=list.filter(c=>(cat=='All'||c.category==cat)&&(c.name+c.description).toLowerCase().includes(q)).map(c=>`<div class="cmd"><b>/${esc(c.name)}</b><span>${esc(c.description)}</span>${c.mod?'<i class="tag">MOD</i>':''}</div>`).join('')||'<div class="cmd"><span>No commands yet. The bot publishes its list when it starts.</span></div>';
-document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{cat=b.dataset.c;draw()})};$('q').oninput=e=>{q=e.target.value.toLowerCase();draw()};draw()}
-
-async function discover(){app.innerHTML='<h2 class="t">Discover servers</h2><p class="c">Communities that use Arcane. Server owners opt in from the dashboard.</p><input id="q" placeholder="Search servers…" autofocus><div class="grid" id="ls" style="margin-top:26px"></div>';let tm;
-const load=async()=>{let r=[];try{r=await api('discover?q='+encodeURIComponent($('q').value))}catch{}
-$('ls').innerHTML=r.map(s=>`<div class="card"><div class="sv"><div class="ico">${s.icon&&/^https?:/.test(s.icon)?`<img src="${esc(s.icon)}" alt="">`:esc((s.name||'?')[0])}</div><div><b>${esc(s.name)}</b><br><small style="color:var(--mu)">${fmt(s.member_count)} members</small></div></div><p style="margin:12px 0">${esc(s.d?.description||'')}</p>${/^https:\/\//.test(s.d?.invite||'')?`<a class="btn s p" href="${esc(s.d.invite)}" target="_blank" rel="noopener">Join server</a>`:''}</div>`).join('')||'<div class="card"><p>No servers found.</p></div>'};
-$('q').oninput=()=>{clearTimeout(tm);tm=setTimeout(load,250)};load()}
-
-async function docs(id){if(!DOCS){try{const d=await api('docs');DOCS=d&&d.length?d:DOCS_D}catch{DOCS=DOCS_D}}
-const cats=[...new Set(DOCS.map(d=>d.category))],cur=DOCS.find(d=>d.id==id)||DOCS[0];
-app.innerHTML=`<div class="docs"><aside>${isOwner()?'<a class="btn s p" href="#/docs/_new" style="margin-bottom:8px">＋ New page</a>':''}${cats.map(c=>`<h4>${esc(c)}</h4>${DOCS.filter(d=>d.category==c).map(d=>`<a href="#/docs/${d.id}" class="${d.id==cur.id?'on':''}">${esc(d.title)}</a>`).join('')}`).join('')}</aside><article class="md">${isOwner()?`<a class="btn s" href="#/docs/_edit/${cur.id}" style="float:right">Edit</a>`:''}${md(cur.body)}</article></div>`}
-function docEditor(id){const d=DOCS.find(x=>x.id==id)||{title:'',category:'Features',body:''};
-app.innerHTML=`<div class="card"><h3>${id?'Edit page':'New page'}</h3><p style="margin:10px 0 4px">Title</p><input id="dt" value="${esc(d.title)}"><p style="margin:10px 0 4px">Category</p><input id="dc" value="${esc(d.category)}"><p style="margin:10px 0 4px">Content (markdown: # headings, **bold**, \`code\`, - lists, [links](https://…))</p><textarea id="db" rows="14">${esc(d.body)}</textarea><div style="margin-top:14px;display:flex;gap:10px"><button class="btn p" id="ds">Save</button><a class="btn" href="#/docs/${id||''}">Cancel</a>${id?'<button class="btn" id="dd" style="margin-left:auto">Delete</button>':''}</div></div>`;
-const commit=async l=>{await put('docs',{items:l});DOCS=l};
-$('ds').onclick=async()=>{const t=$('dt').value.trim();if(!t)return;const n={id:id||slug(t),title:t,category:$('dc').value.trim()||'General',body:$('db').value};
-await commit(id?DOCS.map(x=>x.id==id?n:x):[...DOCS,n]);toast('Page saved');location.hash='#/docs/'+n.id};
-if(id)$('dd').onclick=async()=>{if(confirm('Delete this page?')){await commit(DOCS.filter(x=>x.id!=id));location.hash='#/docs'}}}
-
-async function changelog(){if(!LOG){try{const d=await api('changelog');LOG=d&&d.length?d:LOG_D}catch{LOG=LOG_D}}
-app.innerHTML=`<h2 class="t">Changelog</h2><p class="c">What changed in Arcane, newest first.</p>${isOwner()?'<div style="text-align:center;margin-bottom:10px"><a class="btn s p" href="#/changelog/_new">＋ New release</a></div>':''}${LOG.map((e,i)=>`<div class="log"><time>${esc(e.date)}</time><div><h3>${esc(e.version)} ${e.tag?`<i>${esc(e.tag)}</i>`:''}${isOwner()?`<a class="btn s" href="#/changelog/_edit/${i}" style="margin-left:auto">Edit</a>`:''}</h3><ul>${e.items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div>`).join('')}`}
-function logEditor(i){const e=LOG[i]||{version:'',tag:'',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),items:[]};
-app.innerHTML=`<div class="card"><h3>${i!==undefined?'Edit release':'New release'}</h3><p style="margin:10px 0 4px">Version</p><input id="lv" value="${esc(e.version)}"><p style="margin:10px 0 4px">Tag (short title)</p><input id="lt" value="${esc(e.tag)}"><p style="margin:10px 0 4px">Date</p><input id="ld" value="${esc(e.date)}"><p style="margin:10px 0 4px">Changes (one per line)</p><textarea id="li" rows="8">${esc(e.items.join('\n'))}</textarea><div style="margin-top:14px;display:flex;gap:10px"><button class="btn p" id="ls">Save</button><a class="btn" href="#/changelog">Cancel</a>${i!==undefined?'<button class="btn" id="ldel" style="margin-left:auto">Delete</button>':''}</div></div>`;
-const commit=async l=>{await put('changelog',{items:l});LOG=l};
-$('ls').onclick=async()=>{const n={version:$('lv').value.trim(),tag:$('lt').value.trim(),date:$('ld').value.trim(),items:$('li').value.split('\n').map(s=>s.trim()).filter(Boolean)};if(!n.version)return;
-await commit(i!==undefined?LOG.map((x,k)=>k==i?n:x):[n,...LOG]);toast('Release saved');location.hash='#/changelog'};
-if(i!==undefined)$('ldel').onclick=async()=>{if(confirm('Delete this release?')){await commit(LOG.filter((_,k)=>k!=i));location.hash='#/changelog'}}}
-
-async function dashboard(){let me;try{me=await api('me')}catch{app.innerHTML='<section class="hero"><h1><b>Log in</b></h1><p class="sub">Sign in with Yapin’ to manage your servers.</p><a class="btn p" href="/api/login">Login with Yapin’</a></section>';return}
-const gs=await api('guilds');app.innerHTML=`<h2 class="t">Hey, ${esc(me.name)}</h2><p class="c">Pick a server to configure.</p><div class="grid" id="gl" style="margin-top:20px"></div>`;
-$('gl').innerHTML=gs.map(g=>`<a class="card" href="#/dashboard/${esc(g.server_id)}"><div class="sv"><div class="ico">${g.icon&&/^https?:/.test(g.icon)?`<img src="${esc(g.icon)}" alt="">`:esc((g.name||'?')[0])}</div><div><b>${esc(g.name)}</b><br><small style="color:var(--mu)">${fmt(g.member_count)} members</small></div></div></a>`).join('')||'<div class="card"><p>No servers yet. Add Arcane to a server you own and give it a minute.</p></div>'}
-
-async function guildPage(id){const {guild,config:c}=await api('guild/'+id);for(const k of['welcome','goodbye','automod','discover'])c[k]||={};c.badWords||=[];
-const chs=guild?.channels||[],opt=(l,v,ph)=>`<option value="">${ph}</option>`+l.map(x=>`<option value="${esc(x.id)}" ${x.id==v?'selected':''}>${esc(x.name)}</option>`).join('');
-const row=(t,s,i)=>`<div class="row"><div><b>${t}</b><small>${s}</small></div><div>${i}</div></div>`,sel=(k,v,ph)=>`<select data-k="${k}">${opt(chs,v,ph)}</select>`,sw=(k,v)=>`<input type="checkbox" class="sw" data-k="${k}" ${v?'checked':''}>`;
-const tabs={General:()=>row('Mod log channel','Moderation actions are posted here',sel('modlog',c.modlog,'Off'))+row('Suggestions channel','',sel('suggest',c.suggest,'Off'))+row('Level-up channel','Empty = same channel',sel('levelChannel',c.levelChannel,'Same channel'))+row('XP enabled','',sw('xp',c.xp!==false))+row('XP multiplier','0.5 to 5',`<input data-k="xpRate" type="number" step="0.5" min="0.5" max="5" value="${c.xpRate??1}">`),
-Automod:()=>['spam','links','caps','invites','mentions'].map(k=>row(k[0].toUpperCase()+k.slice(1),'Auto-moderate '+k,sw('automod.'+k,c.automod[k]??(k=='spam'||k=='mentions')))).join('')+row('Banned words','Comma separated, messages are auto-deleted',`<textarea data-k="badWords" rows="3">${esc(c.badWords.join(', '))}</textarea>`),
-Welcome:()=>row('Welcome channel','',sel('welcome.channel',c.welcome.channel,'Off'))+row('Title','',`<input data-k="welcome.title" value="${esc(c.welcome.title)}">`)+row('Message','Use {user} and {server}',`<textarea data-k="welcome.message" rows="3">${esc(c.welcome.message)}</textarea>`)+row('Banner image URL','Yapin’ upload, imgur, tenor, giphy or GitHub link',`<input data-k="welcome.image" value="${esc(c.welcome.image)}">`)+row('Color','Hex, e.g. #8fdcff',`<input data-k="welcome.color" value="${esc(c.welcome.color||'#8fdcff')}">`)+row('Goodbye channel','',sel('goodbye.channel',c.goodbye.channel,'Off'))+row('Goodbye message','',`<textarea data-k="goodbye.message" rows="2">${esc(c.goodbye.message)}</textarea>`)+`<div class="prev"><b>${esc(c.welcome.title||'Welcome!')}</b><br>${esc((c.welcome.message||'Welcome {user} to {server}!').replace('{user}','@NewMember').replace('{server}',guild?.name||'Server'))}</div>`,
-Discover:()=>row('List in Discover','Show this server on the public Discover page',sw('discover.enabled',c.discover.enabled))+row('Description','Up to 300 characters',`<textarea data-k="discover.description" rows="3">${esc(c.discover.description)}</textarea>`)+row('Invite link','https link people use to join',`<input data-k="discover.invite" value="${esc(c.discover.invite)}">`)};
-let cur='General';const draw=()=>{app.innerHTML=`<a href="#/dashboard" style="color:var(--mu)">← Servers</a><h2 style="margin:8px 0 22px;font-size:32px">${esc(guild?.name)}</h2><div class="dash"><div class="side">${Object.keys(tabs).map(t=>`<button class="${t==cur?'on':''}" data-t="${t}">${t}</button>`).join('')}</div><div class="card">${tabs[cur]()}<div style="margin-top:18px"><button class="btn p" id="sv">Save changes</button></div></div></div>`;
-document.querySelectorAll('.side button').forEach(b=>b.onclick=()=>{cur=b.dataset.t;draw()});
-$('sv').onclick=async()=>{const p={};document.querySelectorAll('[data-k]').forEach(e=>{const k=e.dataset.k.split('.');let v=e.type=='checkbox'?e.checked:e.value;if(e.dataset.k=='badWords')v=v.split(',').map(s=>s.trim()).filter(Boolean);if(e.dataset.k=='xpRate')v=Number(v);let o=p;k.slice(0,-1).forEach(x=>o=o[x]||={});o[k.at(-1)]=v});
-const r=await put('guild/'+id,{config:p});Object.assign(c,r.config);toast()}};draw()}
-
-async function route(){const [,p,a,b]=location.hash.split('/');document.querySelectorAll('nav .l').forEach(x=>x.classList.toggle('on',x.getAttribute('href')=='#/'+p));scrollTo(0,0);
-try{if(p=='commands')await commands();else if(p=='discover')await discover();else if(p=='docs'){if(!DOCS)await docs();if(isOwner()&&a=='_new')docEditor();else if(isOwner()&&a=='_edit')docEditor(b);else await docs(a)}
-else if(p=='changelog'){if(!LOG)await changelog();if(isOwner()&&a=='_new')logEditor();else if(isOwner()&&a=='_edit')logEditor(Number(b));else await changelog()}
-else if(p=='dashboard'&&a)await guildPage(a);else if(p=='dashboard')await dashboard();else await home()}
-catch{app.innerHTML='<section class="hero"><h1><b>Hmm.</b></h1><p class="sub">You may need to <a href="/api/login" style="color:var(--a)">log in</a>, or you do not manage this server.</p></section>'}}
-addEventListener('hashchange',route);api('me').then(m=>ME=m).catch(()=>{}).finally(route);
-</script>
-</body></html>
+export default async function handler(req, res) {
+  const path = new URL(req.url, 'http://x').pathname.replace(/^\/api\/?/, '').split('/');
+  const user = session(req);
+  try {
+    if (path[0] === 'login') {
+      const state = mkState();
+      const q = new URLSearchParams({ client_id: CID, redirect_uri: `${SITE}/api/callback`, response_type: 'code', scope: 'identify', state });
+      res.statusCode = 302; res.setHeader('location', `${AUTH_URL}?${q}`); return res.end();
+    }
+    if (path[0] === 'callback') {
+      const u = new URL(req.url, 'http://x'); 
+      if (!okState(u.searchParams.get('state'))) return json(res, 400, { error: 'bad state', hint: 'login link expired, start again from the site' });
+      const t = await (await fetch(TOKEN_URL, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', code: u.searchParams.get('code'), client_id: CID, client_secret: CSEC, redirect_uri: `${SITE}/api/callback` }) })).json();
+      let p = t.user;
+      if (!p && t.access_token) p = await (await fetch(ME_URL, { headers: { authorization: `Bearer ${t.access_token}` } })).json();
+      p = p?.user || p; const id = p?.id || p?.sub; if (!id) return json(res, 401, { error: 'login failed' });
+      res.setHeader('set-cookie', `arc=${enc({ id: String(id), name: p.display_name || p.username || p.name || 'User', avatar: p.avatar_url || p.avatar || null, exp: Date.now() + 7 * 864e5 })}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+      res.statusCode = 302; res.setHeader('location', '/#/dashboard'); return res.end();
+    }
+    if (path[0] === 'logout') { res.setHeader('set-cookie', 'arc=; Path=/; Max-Age=0'); return json(res, 200, { ok: true }); }
+    if (path[0] === 'registry') { // public: real command list published by the bot
+      const { rows } = await pool.query("SELECT value FROM arcane_dashboard_state WHERE key='registry'"); return json(res, 200, rows[0]?.value || []);
+    }
+    if (path[0] === 'stats') {
+      res.setHeader('cache-control', 'public, s-maxage=30');
+      const { rows } = await pool.query('SELECT count(*)::int AS servers, coalesce(sum(member_count),0)::int AS members FROM arcane_guilds'); return json(res, 200, rows[0]);
+    }
+    if (path[0] === 'discover') { // opt-in only: servers that switched Discover on in their dashboard
+      const q = (new URL(req.url, 'http://x').searchParams.get('q') || '').slice(0, 60);
+      const { rows } = await pool.query(`SELECT g.server_id, g.name, g.icon, g.member_count, s.config->'discover' AS d, COALESCE((s.config->>'spotlight')='true', false) AS spot FROM arcane_guilds g JOIN arcane_guild_settings s USING (server_id)
+        WHERE (s.config->'discover'->>'enabled') = 'true' AND ($1 = '' OR g.name ILIKE '%'||$1||'%' OR (s.config->'discover'->>'description') ILIKE '%'||$1||'%') ORDER BY spot DESC, g.member_count DESC NULLS LAST LIMIT 40`, [q]);
+      return json(res, 200, rows);
+    }
+    if (path[0] === 'leaderboard' && path[1]) { // public: only for servers that listed themselves on Discover
+      const g = await pool.query(`SELECT g.name, g.icon, g.member_count, s.config->'discover' AS d FROM arcane_guilds g JOIN arcane_guild_settings s USING (server_id) WHERE g.server_id=$1 AND (s.config->'discover'->>'enabled') = 'true'`, [path[1]]);
+      if (!g.rows[0]) return json(res, 404, { error: 'not listed' });
+      const { rows } = await pool.query('SELECT value FROM arcane_dashboard_state WHERE key=$1', ['lb:' + path[1]]);
+      return json(res, 200, { guild: g.rows[0], rows: rows[0]?.value || [] });
+    }
+    if (path[0] === 'docs' || path[0] === 'changelog') { // public read, owner-only write
+      const key = path[0];
+      if (req.method === 'PUT') {
+        if (!user || !OWNERS.includes(user.id)) return json(res, 403, { error: 'owner only' });
+        const list = cleanList(key, (await body(req)).items);
+        await pool.query(`INSERT INTO arcane_dashboard_state (key,value) VALUES ($1,$2::jsonb) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_at=now()`, [key, JSON.stringify(list)]);
+      }
+      const { rows } = await pool.query('SELECT value FROM arcane_dashboard_state WHERE key=$1', [key]); return json(res, 200, rows[0]?.value || null);
+    }
+    if (!user) return json(res, 401, { error: 'not logged in' });
+    if (path[0] === 'me') return json(res, 200, { ...user, owner: OWNERS.includes(user.id) });
+    if (path[0] === 'guilds') {
+      const { rows } = await pool.query('SELECT server_id,name,icon,member_count FROM arcane_guilds WHERE owner_id=$1 OR $2', [user.id, OWNERS.includes(user.id)]);
+      return json(res, 200, rows);
+    }
+    if (path[0] === 'guild' && path[1]) {
+      if (!(await allowed(user, path[1]))) return json(res, 403, { error: 'forbidden' });
+      if (path[2] === 'action') { // jobs for the bot (picked up on its 15s sync)
+        await pool.query(`CREATE TABLE IF NOT EXISTS arcane_actions (id bigserial PRIMARY KEY, server_id text NOT NULL, type text NOT NULL, payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+          status text NOT NULL DEFAULT 'pending', result text, created_at timestamptz NOT NULL DEFAULT now(), done_at timestamptz)`);
+        if (req.method === 'POST') {
+          const b = await body(req);
+          if (b.type !== 'verify_panel') return json(res, 400, { error: 'unknown action' });
+          const channel = str(b.channel, 64);
+          if (!channel) return json(res, 400, { error: 'channel required' });
+          const busy = await pool.query("SELECT 1 FROM arcane_actions WHERE server_id=$1 AND type=$2 AND status IN ('pending','running') AND created_at > now() - interval '10 minutes'", [path[1], b.type]);
+          if (busy.rowCount) return json(res, 429, { error: 'A panel is already waiting to be posted' });
+          const { rows } = await pool.query('INSERT INTO arcane_actions (server_id,type,payload) VALUES ($1,$2,$3::jsonb) RETURNING id', [path[1], b.type, JSON.stringify({ channel })]);
+          return json(res, 200, { id: String(rows[0].id), status: 'pending' });
+        }
+        const { rows } = await pool.query('SELECT id::text, status, result FROM arcane_actions WHERE server_id=$1 AND id=$2', [path[1], /^\d+$/.test(path[3] || '') ? path[3] : '0']);
+        return rows[0] ? json(res, 200, rows[0]) : json(res, 404, { error: 'not found' });
+      }
+      if (req.method === 'PUT') {
+        const patch = sanitize((await body(req)).config);
+        // Top-level keys replace, but `verify` is merged one level deep so the bot's panels + count survive a save.
+        await pool.query(`INSERT INTO arcane_guild_settings (server_id,config) VALUES ($1,$2::jsonb)
+          ON CONFLICT (server_id) DO UPDATE SET config =
+            (arcane_guild_settings.config || (EXCLUDED.config - 'verify'))
+            || CASE WHEN EXCLUDED.config ? 'verify'
+                 THEN jsonb_build_object('verify', COALESCE(arcane_guild_settings.config->'verify', '{}'::jsonb) || (EXCLUDED.config->'verify'))
+                 ELSE '{}'::jsonb END,
+            updated_at=now()`, [path[1], JSON.stringify(patch)]);
+      }
+      const [g, s] = await Promise.all([pool.query('SELECT * FROM arcane_guilds WHERE server_id=$1', [path[1]]), pool.query('SELECT config FROM arcane_guild_settings WHERE server_id=$1', [path[1]])]);
+      return json(res, 200, { guild: g.rows[0], config: s.rows[0]?.config || {} });
+    }
+    if (path[0] === 'commands' && OWNERS.includes(user.id)) { // global on/off, picked up by the bot within 15s
+      if (req.method === 'PUT') {
+        const list = ((await body(req)).commands || []).map((c) => ({ name: String(c.name).slice(0, 32), description: String(c.description).slice(0, 100) }));
+        await pool.query(`INSERT INTO arcane_dashboard_state (key,value) VALUES ('commands',$1::jsonb) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_at=now()`, [JSON.stringify(list)]);
+      }
+      const { rows } = await pool.query("SELECT value FROM arcane_dashboard_state WHERE key='commands'"); return json(res, 200, rows[0]?.value || null);
+    }
+    json(res, 404, { error: 'not found' });
+  } catch (e) { console.error(e); json(res, 500, { error: 'server error' }); }
+}
